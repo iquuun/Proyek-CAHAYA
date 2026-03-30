@@ -6,8 +6,7 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-    },
-    withCredentials: true, // Required for Sanctum CSRF cookies
+    }
 });
 
 // Request interceptor to attach token
