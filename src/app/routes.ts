@@ -13,6 +13,7 @@ import CashFlowPage from "./pages/CashFlowPage";
 import LaporanLabaPage from "./pages/LaporanLabaPage";
 import NilaiAsetPage from "./pages/NilaiAsetPage";
 import PengaturanPage from "./pages/PengaturanPage";
+import UsersPage from "./pages/UsersPage";
 
 export const router = createBrowserRouter([
   {
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
       { path: "laporan-laba", Component: LaporanLabaPage },
       { path: "nilai-aset", Component: NilaiAsetPage },
       { path: "pengaturan", Component: PengaturanPage },
+      { path: "users", Component: UsersPage },
     ],
   },
 ]);

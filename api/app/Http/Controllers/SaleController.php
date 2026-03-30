@@ -66,7 +66,9 @@ class SaleController extends Controller
                 ];
             }
 
-            $invoice = 'INV-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+            // Gunakan nomor urut harian yang jauh lebih rapi dan pendek (contoh: INV-20260330-001)
+            $todayCount = Sale::whereDate('tanggal', date('Y-m-d'))->count() + 1;
+            $invoice = 'INV-' . date('Ymd') . '-' . str_pad($todayCount, 3, '0', STR_PAD_LEFT);
             $taxPercent = $validated['tax_percent'] ?? 0;
             $taxAmount = ($totalPenjualan * $taxPercent) / 100;
 
@@ -122,5 +124,47 @@ class SaleController extends Controller
     public function show(Sale $sale)
     {
         return response()->json($sale->load(['items.product', 'user']));
+    }
+
+    public function update(Request $request, Sale $sale)
+    {
+        $validated = $request->validate([
+            'nama_barang_manual' => 'nullable|string|max:255',
+            'username_pembeli' => 'nullable|string|max:255',
+            'harga_modal_manual' => 'nullable|numeric|min:0',
+            'masuk_dp' => 'nullable|numeric|min:0',
+            'keluar_tf' => 'nullable|numeric|min:0',
+            'status_pencairan' => 'nullable|string|in:belum,lunas',
+        ]);
+
+        $sale->update($validated);
+
+        return response()->json($sale->load(['items.product', 'user']));
+    }
+
+    public function destroy(Sale $sale)
+    {
+        DB::beginTransaction();
+        try {
+            // Restore stock for each sale item that has a product
+            foreach ($sale->items as $item) {
+                if ($item->product_id) {
+                    $product = Product::find($item->product_id);
+                    if ($product) {
+                        $product->increment('stok_saat_ini', $item->qty);
+                    }
+                }
+            }
+
+            // Delete all sale items first, then the sale
+            $sale->items()->delete();
+            $sale->delete();
+
+            DB::commit();
+            return response()->json(['message' => 'Transaksi berhasil dibatalkan dan stok dikembalikan.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Gagal membatalkan transaksi: ' . $e->getMessage()], 500);
+        }
     }
 }

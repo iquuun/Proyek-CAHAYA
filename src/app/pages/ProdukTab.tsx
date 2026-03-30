@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../api';
 
@@ -41,7 +41,7 @@ export default function ProdukTab() {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8; // Adjust pagination limit
+  const itemsPerPage = 10;
 
   useEffect(() => {
     fetchData();
@@ -51,6 +51,111 @@ export default function ProdukTab() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedCategory]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast.error('Mohon upload file dg format .csv');
+      e.target.value = '';
+      return;
+    }
+
+    const parseCSVLine = (text: string, separator: string) => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === separator && !inQuotes) {
+          result.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current);
+      return result.map(s => s.replace(/^"|"$/g, '').trim());
+    };
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result as string;
+        // Detect if Excel in Indonesia saved it with semicolons
+        const separator = text.includes(';') ? ';' : ',';
+        const lines = text.split('\n');
+        const productsRaw = [];
+        
+        // Skip header
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          
+          const cols = parseCSVLine(line, separator);
+          
+          let k = ''; let n = ''; let hb = 0; let hj = 0; let s = 0; let c = 'UMUM';
+
+          // Heuristik mendeteksi jika Excel menghilangkan kolom pertama (Kolom A / Barcode) karena kosong.
+          // Jika kolom ke-2 dan ke-3 adalah angka murni (Harga Beli & Jual), berarti kolom pertama pasti Nama.
+          const col1IsNumber = /^\d+$/.test((cols[1] || '').replace(/[^0-9]/g, ""));
+          const col2IsNumber = /^\d+$/.test((cols[2] || '').replace(/[^0-9]/g, ""));
+
+          if (cols.length === 5 || (col1IsNumber && col2IsNumber)) {
+            // Kolom Kode ter-skip oleh Excel
+            n = cols[0] || '';
+            hb = parseFloat((cols[1] || '0').replace(/[^0-9]/g, ""));
+            hj = parseFloat((cols[2] || '0').replace(/[^0-9]/g, ""));
+            s = parseInt((cols[3] || '0').replace(/[^0-9]/g, ""));
+            c = cols[4] || 'UMUM';
+          } else if (cols.length >= 6) {
+            // Format 6 kolom lengkap
+            k = cols[0] || '';
+            n = cols[1] || '';
+            hb = parseFloat((cols[2] || '0').replace(/[^0-9]/g, ""));
+            hj = parseFloat((cols[3] || '0').replace(/[^0-9]/g, ""));
+            s = parseInt((cols[4] || '0').replace(/[^0-9]/g, ""));
+            c = cols[5] || 'UMUM';
+          }
+
+          if (n && n.trim() !== '') {
+            productsRaw.push({
+              kode: k.trim(),
+              name: n.trim(),
+              harga_beli: isNaN(hb) ? 0 : hb,
+              harga_jual: isNaN(hj) ? 0 : hj,
+              stok_saat_ini: isNaN(s) ? 0 : s,
+              category_name: c.trim() || 'UMUM'
+            });
+          }
+        }
+
+        if (productsRaw.length > 0) {
+          setIsSubmitting(true);
+          const toastId = toast.loading(`Mengimpor ${productsRaw.length} produk...`);
+          try {
+            const res = await api.post('/products/bulk', productsRaw);
+            toast.success(res.data.message || 'Berhasil impor produk', { id: toastId });
+            fetchData();
+          } catch(err: any) {
+            toast.error(err.response?.data?.message || 'Gagal impor data', { id: toastId });
+          } finally {
+            setIsSubmitting(false);
+          }
+        } else {
+          toast.warning('File CSV kosong atau format salah');
+        }
+
+      } catch (err) {
+        toast.error('Gagal membaca file CSV');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   const fetchData = async () => {
     try {
@@ -196,13 +301,20 @@ export default function ProdukTab() {
           <h2 className="text-base font-bold text-gray-800 tracking-tight">Daftar Produk</h2>
           <p className="text-xs text-gray-500 mt-0.5">Kelola semua produk di toko</p>
         </div>
-        <button
-          onClick={() => handleOpenModal('add')}
-          className="flex items-center gap-1.5 bg-[#3B82F6] text-white px-3 py-1.5 rounded-md hover:bg-[#2563EB] transition-colors text-xs font-medium shadow-sm"
-        >
-          <Plus size={14} />
-          Tambah Produk
-        </button>
+        <div className="flex gap-2">
+          <label className="flex items-center gap-1.5 bg-emerald-600/10 text-emerald-700 px-3 py-1.5 rounded-md hover:bg-emerald-600 hover:text-white transition-colors text-xs font-bold shadow-sm cursor-pointer border border-emerald-200">
+            <Upload size={14} />
+            Import CSV
+            <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} disabled={isSubmitting} />
+          </label>
+          <button
+            onClick={() => handleOpenModal('add')}
+            className="flex items-center gap-1.5 bg-[#3B82F6] text-white px-3 py-1.5 rounded-md hover:bg-[#2563EB] transition-colors text-xs font-medium shadow-sm"
+          >
+            <Plus size={14} />
+            Tambah Produk
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -302,51 +414,48 @@ export default function ProdukTab() {
           </table>
         </div>
         
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="bg-gray-50 border-t border-gray-100 px-4 py-3 flex items-center justify-between sm:px-6">
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs text-gray-700">
-                  Menampilkan <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> hingga <span className="font-medium">{Math.min(currentPage * itemsPerPage, filteredProducts.length)}</span> dari <span className="font-medium">{filteredProducts.length}</span> hasil
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+        {/* Pagination Footer */}
+        <div className="border-t border-gray-100 px-3 py-2 flex items-center justify-between bg-gray-50/50">
+          <p className="text-[10px] text-gray-500 font-medium">
+            Menampilkan {currentItems.length} dari {filteredProducts.length} produk
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+              className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={14} className="text-gray-600" />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+              .map((p, idx, arr) => (
+                <span key={p}>
+                  {idx > 0 && arr[idx - 1] !== p - 1 && (
+                    <span className="text-gray-400 text-[10px] px-0.5">...</span>
+                  )}
                   <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-200 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => setCurrentPage(p)}
+                    className={`min-w-[24px] h-6 text-[11px] font-bold rounded transition-colors ${
+                      currentPage === p
+                        ? 'bg-[#3B82F6] text-white shadow-sm'
+                        : 'text-gray-600 hover:bg-gray-200'
+                    }`}
                   >
-                    <span className="sr-only">Previous</span>
-                    <ChevronLeft size={16} />
+                    {p}
                   </button>
-                  {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCurrentPage(i + 1)}
-                      className={`relative inline-flex items-center px-3 py-2 border text-xs font-medium ${
-                        currentPage === i + 1
-                          ? 'z-10 bg-[#3B82F6] border-[#3B82F6] text-white'
-                          : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-200 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span className="sr-only">Next</span>
-                    <ChevronRight size={16} />
-                  </button>
-                </nav>
-              </div>
-            </div>
+                </span>
+              ))
+            }
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+              className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight size={14} className="text-gray-600" />
+            </button>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Summary */}

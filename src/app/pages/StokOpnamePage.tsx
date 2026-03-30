@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { ClipboardList, Save, Search } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { ClipboardList, Save, Search, ChevronLeft, ChevronRight, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 import api from '../api';
 
@@ -17,6 +18,10 @@ export default function StokOpnamePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [keterangan, setKeterangan] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     fetchProducts();
@@ -70,9 +75,11 @@ export default function StokOpnamePage() {
       const payload = {
         tanggal: new Date().toISOString().split('T')[0],
         keterangan: keterangan || 'Penyesuaian stok opname',
-        items: opnameItems.filter(i => i.stok_fisik !== '').map(i => ({
-          ...i,
-          stok_fisik: i.stok_fisik as number
+        items: itemsWithDiff.map(i => ({
+          product_id: i.product_id,
+          stok_sistem: i.stok_sistem,
+          stok_fisik: i.stok_fisik as number,
+          selisih: i.selisih
         }))
       };
       
@@ -87,9 +94,56 @@ export default function StokOpnamePage() {
     }
   };
 
-  const filteredItems = opnameItems.filter((item) =>
-    item.product_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredItems = useMemo(() => {
+    return opnameItems.filter((item) =>
+      item.product_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [opnameItems, searchTerm]);
+
+  // Reset pagination when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage) || 1;
+  const currentItems = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredItems.slice(start, start + itemsPerPage);
+  }, [filteredItems, currentPage, itemsPerPage]);
+
+  const handleExportCSV = () => {
+    const worksheetData: any[][] = [
+      ["LEMBAR KERJA STOK OPNAME"],
+      [],
+      ["Nama Produk", "Stok Sistem", "Stok Fisik", "Selisih"]
+    ];
+
+    filteredItems.forEach(item => {
+      worksheetData.push([
+        item.product_name,
+        item.stok_sistem,
+        item.stok_fisik === '' ? '' : item.stok_fisik,
+        item.selisih
+      ]);
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    
+    // Set column widths for better readability
+    worksheet['!cols'] = [
+      { wch: 55 }, // Nama Produk
+      { wch: 15 }, // Stok Sistem
+      { wch: 15 }, // Stok Fisik
+      { wch: 15 }  // Selisih
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Stok Opname");
+    
+    const dateStr = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `Data_Stok_Opname_${dateStr}.xlsx`);
+  };
 
   if (loading) return <div className="p-8 text-center text-gray-500">Memuat data stok...</div>;
 
@@ -101,8 +155,14 @@ export default function StokOpnamePage() {
           <h2 className="text-base font-bold text-gray-800 tracking-tight">Stok Opname</h2>
           <p className="text-xs text-gray-500 mt-0.5">Periksa dan sesuaikan stok fisik dengan sistem</p>
         </div>
-        <div className="flex items-center gap-3">
-          <ClipboardList className="text-[#3B82F6]" size={16} />
+        <div className="flex items-center gap-2 print:hidden">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+          >
+            <FileSpreadsheet size={16} />
+            <span className="hidden sm:inline">Export Excel</span>
+          </button>
         </div>
       </div>
 
@@ -175,7 +235,7 @@ export default function StokOpnamePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredItems.map((item) => (
+              {currentItems.map((item) => (
                 <tr key={item.product_id} className={`transition-colors border-b border-gray-50 last:border-0 ${item.selisih !== 0 ? 'bg-orange-50/30' : 'hover:bg-blue-50/50'}`}>
                   <td className="px-3 py-2 text-xs">
                     <p className="font-bold text-xs text-gray-800">{item.product_name}</p>
@@ -190,7 +250,7 @@ export default function StokOpnamePage() {
                       type="number"
                       value={item.stok_fisik === '' ? '' : item.stok_fisik}
                       onChange={(e) => updateStokFisik(item.product_id, e.target.value)}
-                      className="w-20 text-center px-1.5 py-0.5 border border-gray-200 rounded focus:ring-1 text-xs font-bold bg-white focus:ring-[#3B82F6] outline-none"
+                      className="w-20 text-center px-1.5 py-0.5 border border-gray-200 rounded focus:ring-1 text-xs font-bold bg-white focus:ring-[#3B82F6] outline-none print:border-none print:bg-transparent"
                     />
                   </td>
                   <td className="px-3 py-2 text-center text-xs">
@@ -211,6 +271,49 @@ export default function StokOpnamePage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Footer */}
+        <div className="border-t border-gray-100 px-3 py-2 flex items-center justify-between bg-gray-50/50 print:hidden mt-2">
+          <p className="text-[10px] text-gray-500 font-medium">
+            Menampilkan {currentItems.length} dari {filteredItems.length} produk
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+              className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={14} className="text-gray-600" />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+              .map((p, idx, arr) => (
+                <span key={p} className="flex items-center">
+                  {idx > 0 && arr[idx - 1] !== p - 1 && (
+                    <span className="text-gray-400 text-[10px] px-0.5">...</span>
+                  )}
+                  <button
+                    onClick={() => setCurrentPage(p)}
+                    className={`min-w-[24px] h-6 text-[11px] font-bold rounded transition-colors ${
+                      currentPage === p
+                        ? 'bg-[#3B82F6] text-white shadow-sm'
+                        : 'text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                </span>
+              ))
+            }
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+              className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight size={14} className="text-gray-600" />
+            </button>
+          </div>
         </div>
 
         {/* Save Button */}

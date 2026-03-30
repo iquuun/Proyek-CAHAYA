@@ -17,7 +17,13 @@ class Sale extends Model
         'tax_amount',
         'pembayaran',
         'kembalian',
-        'user_id'
+        'user_id',
+        'nama_barang_manual',
+        'username_pembeli',
+        'harga_modal_manual',
+        'masuk_dp',
+        'keluar_tf',
+        'status_pencairan'
     ];
 
     public function items()

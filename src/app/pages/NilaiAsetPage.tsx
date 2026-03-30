@@ -108,18 +108,19 @@ export default function NilaiAsetPage() {
                   data={data.data_kategori}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
-                  label={({ kategori, persentase }) => `${kategori} ${persentase}%`}
+                  innerRadius={65}
                   outerRadius={100}
-                  fill="#8884d8"
+                  paddingAngle={3}
                   dataKey="nilai_aset"
+                  nameKey="kategori"
+                  stroke="none"
                 >
                   {data.data_kategori.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: number) => [`Rp ${value.toLocaleString('id-ID')}`, 'Nilai Aset']}
+                  formatter={(value: number, name: string, props: any) => [`Rp ${value.toLocaleString('id-ID')} (${props.payload.persentase}%)`, name]}
                 />
               </PieChart>
             </ResponsiveContainer>

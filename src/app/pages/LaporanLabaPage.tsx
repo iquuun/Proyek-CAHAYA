@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router';
-import { TrendingUp, ShoppingCart, Package, DollarSign } from 'lucide-react';
+import { TrendingUp, ShoppingCart, Package, DollarSign, Download } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import api from '../api';
 
@@ -22,7 +23,7 @@ interface LaporanData {
   }[];
 }
 
-export default function LaporanLabaPage() {
+export default function LaporanLabaPage({ isEmbedded }: { isEmbedded?: boolean }) {
   const { isOwner } = useAuth();
   const [data, setData] = useState<LaporanData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,13 +63,63 @@ export default function LaporanLabaPage() {
     laba_bersih: labaBersih
   } = data.summary;
 
+  const exportToCSV = () => {
+    if (!data) return;
+    
+    const worksheetData: any[][] = [
+      ["LAPORAN LABA RUGI CAHAYA KOMPUTER"],
+      [`Periode:`, month === 'all' ? `Tahun ${year}` : `Bulan ${month} Tahun ${year}`],
+      [],
+      ["RINGKASAN KEUANGAN"],
+      ["Pendapatan Penjualan", totalPendapatan],
+      ["Harga Pokok Penjualan (HPP)", totalHPP],
+      ["Laba Kotor", labaKotor],
+      ["Biaya Operasional", totalBiaya],
+      ["Laba Bersih", labaBersih],
+      [],
+      ["RINCIAN PER BULAN"],
+      ["Bulan", "Pendapatan", "HPP", "Biaya", "Laba Bersih"]
+    ];
+    
+    data.monthlyData.forEach(row => {
+      worksheetData.push([row.bulan, row.pendapatan, row.hpp, row.biaya, row.laba]);
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    worksheet['!cols'] = [
+      { wch: 30 }, // Bulan / Labels
+      { wch: 20 }, // Pendapatan
+      { wch: 20 }, // HPP
+      { wch: 20 }, // Biaya
+      { wch: 20 }  // Laba Bersih
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Laporan Laba Rugi");
+    
+    XLSX.writeFile(workbook, `Laporan_Laba_${month}_${year}.xlsx`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-base font-bold text-gray-800 tracking-tight">Laporan Laba Rugi</h2>
-        <p className="text-xs text-gray-500 mt-0.5">Analisis keuangan dan profitabilitas bisnis</p>
-      </div>
+      {!isEmbedded && (
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800 tracking-tight flex items-center gap-2">
+              Laporan Laba Rugi
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">Analisis keuangan dan profitabilitas bisnis</p>
+          </div>
+          <button 
+            onClick={exportToCSV}
+            className="flex items-center gap-2 bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-600/30 hover:bg-emerald-700 transition-all active:scale-95 text-sm"
+          >
+            <Download size={18} />
+            Export ke Excel (.csv)
+          </button>
+        </div>
+      )}
 
       {/* Period Selector */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">

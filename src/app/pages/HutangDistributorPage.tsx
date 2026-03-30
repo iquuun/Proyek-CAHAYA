@@ -70,66 +70,53 @@ export default function HutangDistributorPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-xl font-semibold text-gray-800">Hutang Distributor</h2>
-        <p className="text-gray-600 mt-1">Kelola hutang pembelian dari distributor</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-bold text-gray-800 tracking-tight">Hutang Distributor</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Kelola hutang pembelian dari distributor</p>
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <CreditCard className="text-[#3B82F6]" size={16} />
-            </div>
-            <p className="text-xs text-gray-600">Total Hutang</p>
-          </div>
-          <p className="text-xl font-semibold text-[#3B82F6]">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
+          <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">Total Hutang</p>
+          <p className="text-xl font-bold text-[#3B82F6]">
             Rp {totalHutang.toLocaleString('id-ID')}
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <DollarSign className="text-green-600" size={16} />
-            </div>
-            <p className="text-xs text-gray-600">Terbayar</p>
-          </div>
-          <p className="text-xl font-semibold text-green-600">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
+          <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">Terbayar</p>
+          <p className="text-xl font-bold text-green-600">
             Rp {totalTerbayar.toLocaleString('id-ID')}
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-              <CreditCard className="text-red-600" size={16} />
-            </div>
-            <p className="text-xs text-gray-600">Sisa Hutang</p>
-          </div>
-          <p className="text-xl font-semibold text-red-600">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
+          <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">Sisa Hutang</p>
+          <p className="text-xl font-bold text-red-600">
             Rp {totalSisa.toLocaleString('id-ID')}
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-          <p className="text-xs text-gray-600 mb-3">Hutang Aktif</p>
-          <p className="text-xl font-semibold text-gray-800">{hutangAktif.length}</p>
-          <p className="text-[11px] text-gray-500 mt-1">Pembelian Belum Lunas</p>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
+          <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">Hutang Aktif</p>
+          <p className="text-xl font-bold text-gray-800">{hutangAktif.length}</p>
+          <p className="text-[10px] text-gray-400 font-medium">Pembelian Belum Lunas</p>
         </div>
       </div>
 
       {/* Hutang Per Distributor */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-        <h3 className="text-base font-medium text-gray-800 mb-3">Hutang Per Distributor</h3>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
+        <h3 className="text-sm font-bold text-gray-800 mb-3">Hutang Per Distributor</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {Object.entries(hutangPerDistributor)
             .filter(([_, sisa]) => sisa > 0)
             .map(([distributor, sisa]) => (
-              <div key={distributor} className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="font-medium text-gray-800 mb-1">{distributor}</p>
-                <p className="text-lg font-semibold text-red-600">
+              <div key={distributor} className="p-2.5 bg-red-50 border border-red-100 rounded-lg">
+                <p className="font-medium text-xs text-gray-800 mb-0.5">{distributor}</p>
+                <p className="text-base font-bold text-red-600">
                   Rp {sisa.toLocaleString('id-ID')}
                 </p>
               </div>
@@ -138,21 +125,21 @@ export default function HutangDistributorPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 border-b border-gray-100">
-          <h3 className="text-base font-medium text-gray-800">Detail Hutang</h3>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-3 border-b border-gray-100">
+          <h3 className="text-sm font-bold text-gray-800">Detail Hutang</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="text-left px-4 py-2 text-xs font-medium text-gray-700">Invoice</th>
-                <th className="text-left px-4 py-2 text-xs font-medium text-gray-700">Distributor</th>
-                <th className="text-left px-4 py-2 text-xs font-medium text-gray-700">Tanggal</th>
-                <th className="text-right px-4 py-2 text-xs font-medium text-gray-700">Total</th>
-                <th className="text-right px-4 py-2 text-xs font-medium text-gray-700">Terbayar</th>
-                <th className="text-right px-4 py-2 text-xs font-medium text-gray-700">Sisa</th>
-                <th className="text-center px-4 py-2 text-xs font-medium text-gray-700">Status</th>
+                <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Invoice</th>
+                <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Distributor</th>
+                <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Tanggal</th>
+                <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Total</th>
+                <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Terbayar</th>
+                <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Sisa</th>
+                <th className="text-center px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -170,21 +157,21 @@ export default function HutangDistributorPage() {
                   const persentaseBayar = (terbayar / total) * 100;
 
                   return (
-                    <tr key={hutang.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3">
-                        <p className="font-medium text-gray-800">{hutang.invoice || '-'}</p>
+                    <tr key={hutang.id} className="hover:bg-blue-50/50 transition-colors border-b border-gray-50 last:border-0">
+                      <td className="px-3 py-2 text-xs">
+                        <p className="font-bold text-gray-800">{hutang.invoice || '-'}</p>
                       </td>
-                      <td className="px-4 py-3 text-gray-700">{hutang.distributor?.name || '-'}</td>
-                      <td className="px-4 py-3 text-gray-700">
+                      <td className="px-3 py-2 text-xs text-gray-700">{hutang.distributor?.name || '-'}</td>
+                      <td className="px-3 py-2 text-xs text-gray-700">
                         {new Date(hutang.tanggal).toLocaleDateString('id-ID')}
                       </td>
-                      <td className="px-4 py-3 text-right font-medium text-gray-800">
+                      <td className="px-3 py-2 text-xs text-right font-medium text-gray-800">
                         Rp {total.toLocaleString('id-ID')}
                       </td>
-                      <td className="px-4 py-3 text-right text-green-600">
+                      <td className="px-3 py-2 text-xs text-right text-green-600">
                         Rp {terbayar.toLocaleString('id-ID')}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-2 text-xs text-right">
                         <span className="font-medium text-red-600">
                           Rp {sisa.toLocaleString('id-ID')}
                         </span>

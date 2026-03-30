@@ -139,7 +139,7 @@ export default function DistributorPage() {
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
-                <h3 className="text-base font-medium text-gray-800">{distributor.name}</h3>
+                <h3 className="text-sm font-bold text-gray-800">{distributor.name}</h3>
               </div>
               <div className="flex gap-2">
                 <button
@@ -171,14 +171,14 @@ export default function DistributorPage() {
             <div className="border-t border-gray-100 pt-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-[11px] text-gray-600 mb-1">Total Transaksi</p>
-                  <p className="text-base font-semibold text-[#3B82F6]">
+                  <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">Total Transaksi</p>
+                  <p className="text-sm font-bold text-[#3B82F6]">
                     {distributor.purchases_count || 0}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] text-gray-600 mb-1">Total Pembelian</p>
-                  <p className="text-base font-semibold text-[#3B82F6]">
+                  <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">Total Pembelian</p>
+                  <p className="text-sm font-bold text-[#3B82F6]">
                     Rp {(Number(distributor.purchases_sum_total_pembelian || 0) / 1000000).toFixed(1)} Jt
                   </p>
                 </div>

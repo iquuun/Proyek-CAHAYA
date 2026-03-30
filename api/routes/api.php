@@ -15,6 +15,7 @@ use App\Http\Controllers\LaporanLabaController;
 use App\Http\Controllers\NilaiAsetController;
 use App\Http\Controllers\StockOpnameController;
 use App\Http\Controllers\WarrantyController;
+use App\Http\Controllers\UserController;
 
 Route::post('/login', [AuthController::class , 'login']);
 Route::get('/settings', [SettingController::class , 'index']); // Public so anyone can see the app logo/name
@@ -23,12 +24,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard', [DashboardController::class , 'index']);
     Route::get('/laporan-laba', [LaporanLabaController::class , 'index']);
     Route::get('/nilai-aset', [NilaiAsetController::class , 'index']);
+    Route::get('/settings/backup', [SettingController::class, 'backupDatabase']);
     Route::post('/settings', [SettingController::class , 'update']);
     Route::post('/logout', [AuthController::class , 'logout']);
     Route::get('/me', [AuthController::class , 'me']);
 
+    // Admin & Users Staff
+    Route::apiResource('users', UserController::class);
+
     // Master Produk & Kategori
     Route::apiResource('categories', CategoryController::class);
+    Route::post('products/bulk', [ProductController::class, 'bulkImport']);
     Route::apiResource('products', ProductController::class);
 
     // Master Distributor & Pembelian

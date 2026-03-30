@@ -73,7 +73,7 @@ export default function GaransiPage() {
         customer_name: warranty.customer_name,
         customer_phone: warranty.customer_phone,
         product_name: warranty.product_name,
-        tanggal_masuk: warranty.tanggal_masuk.split('T')[0],
+        tanggal_masuk: warranty.tanggal_masuk.substring(0, 10),
         status: warranty.status,
         nomor_resi: warranty.nomor_resi || '',
         catatan: warranty.catatan || '',

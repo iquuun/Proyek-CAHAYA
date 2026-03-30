@@ -24,6 +24,7 @@ class PurchaseController extends Controller
             'total_pembelian' => 'required|numeric|min:0',
             'terbayar' => 'required|numeric|min:0',
             'status_pembayaran' => 'required|in:lunas,hutang',
+            'jatuh_tempo' => 'nullable|date',
             // Optional: items array to restock products at the same time
             'items' => 'nullable|array',
             'items.*.product_id' => 'required|exists:products,id',
@@ -43,6 +44,7 @@ class PurchaseController extends Controller
                 'total_pembelian' => $validated['total_pembelian'],
                 'terbayar' => $validated['terbayar'],
                 'status_pembayaran' => $validated['status_pembayaran'],
+                'jatuh_tempo' => $validated['jatuh_tempo'] ?? null,
             ]);
 
             // If items are provided in the purchase request, save them and update product stock

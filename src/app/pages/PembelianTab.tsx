@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Plus, Eye, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Eye, CheckCircle, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import Select from 'react-select';
 import api from '../api';
 import { toast } from 'sonner';
@@ -31,6 +32,7 @@ interface Purchase {
   total_pembelian: number;
   terbayar: number;
   status_pembayaran: 'lunas' | 'hutang';
+  jatuh_tempo?: string | null;
   items?: PurchaseItem[];
 }
 
@@ -42,6 +44,10 @@ export default function PembelianTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<'all' | 'lunas' | 'hutang'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Modal 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -59,6 +65,7 @@ export default function PembelianTab() {
     total_pembelian: string;
     terbayar: string;
     status_pembayaran: 'lunas' | 'hutang';
+    jatuh_tempo: string;
     items: {
       product_id: string;
       qty: string;
@@ -73,6 +80,7 @@ export default function PembelianTab() {
     total_pembelian: '0',
     terbayar: '0',
     status_pembayaran: 'lunas',
+    jatuh_tempo: '',
     items: [],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,6 +88,11 @@ export default function PembelianTab() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filter]);
 
   const fetchData = async () => {
     try {
@@ -99,9 +112,23 @@ export default function PembelianTab() {
     }
   };
 
-  const filteredPurchases = purchases.filter(
-    (p) => filter === 'all' || p.status_pembayaran === filter
-  );
+  const filteredPurchases = useMemo(() => {
+    return purchases.filter((p) => {
+      const matchesFilter = filter === 'all' || p.status_pembayaran === filter;
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = 
+        p.invoice?.toLowerCase().includes(searchLower) ||
+        p.distributor?.name.toLowerCase().includes(searchLower);
+      
+      return matchesFilter && matchesSearch;
+    });
+  }, [purchases, filter, searchQuery]);
+
+  const totalPages = Math.ceil(filteredPurchases.length / itemsPerPage) || 1;
+  const currentItems = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredPurchases.slice(start, start + itemsPerPage);
+  }, [filteredPurchases, currentPage, itemsPerPage]);
 
   const handleOpenModal = () => {
     setFormData({
@@ -111,6 +138,7 @@ export default function PembelianTab() {
       total_pembelian: '0',
       terbayar: '0',
       status_pembayaran: 'lunas',
+      jatuh_tempo: '',
       items: [],
     });
     setIsModalOpen(true);
@@ -133,6 +161,7 @@ export default function PembelianTab() {
         total_pembelian: total,
         terbayar: terbayar,
         status_pembayaran: (terbayar >= total) ? 'lunas' : 'hutang',
+        jatuh_tempo: (terbayar < total && formData.jatuh_tempo) ? formData.jatuh_tempo : undefined,
         items: formData.items.map(i => ({
           product_id: parseInt(i.product_id),
           qty: parseInt(i.qty),
@@ -214,6 +243,48 @@ export default function PembelianTab() {
     calculateTotal(newItems);
   };
 
+  const exportPurchasesCSV = () => {
+    const worksheetData: any[][] = [
+      ["LAPORAN SELURUH DATA PEMBELIAN"],
+      [],
+      ["Invoice", "Distributor", "Tanggal", "Status", "Total Pembelian", "Terbayar", "Sisa Hutang"]
+    ];
+    
+    // Use the filtered or all
+    const filtered = filter === 'all' 
+      ? purchases 
+      : purchases.filter(p => p.status_pembayaran === filter);
+
+    filtered.forEach(p => {
+      const hutang = p.total_pembelian - p.terbayar;
+      worksheetData.push([
+        p.invoice,
+        p.distributor?.name || '-',
+        p.tanggal,
+        p.status_pembayaran,
+        p.total_pembelian,
+        p.terbayar,
+        hutang
+      ]);
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    worksheet['!cols'] = [
+      { wch: 20 }, // Invoice
+      { wch: 25 }, // Distributor
+      { wch: 15 }, // Tanggal
+      { wch: 20 }, // Status
+      { wch: 20 }, // Total Pembelian
+      { wch: 15 }, // Terbayar
+      { wch: 15 }  // Sisa Hutang
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Pembelian");
+    
+    XLSX.writeFile(workbook, `Riwayat_Pembelian_${filter}.xlsx`);
+  };
+
   if (loading) return <div className="p-5 text-center text-gray-500">Memuat data...</div>;
   if (error) return <div className="p-5 text-center text-red-500">{error}</div>;
 
@@ -257,36 +328,55 @@ export default function PembelianTab() {
       </div>
 
       {/* Filter */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
-        <div className="flex gap-2">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-3 py-2 rounded-lg transition-colors ${filter === 'all'
-              ? 'bg-[#3B82F6] text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-          >
-            Semua
-          </button>
-          <button
-            onClick={() => setFilter('lunas')}
-            className={`px-3 py-2 rounded-lg transition-colors ${filter === 'lunas'
-              ? 'bg-[#3B82F6] text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-          >
-            Lunas
-          </button>
-          <button
-            onClick={() => setFilter('hutang')}
-            className={`px-3 py-2 rounded-lg transition-colors ${filter === 'hutang'
-              ? 'bg-[#3B82F6] text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-          >
-            Belum Lunas
-          </button>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFilter('all')}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${filter === 'all'
+                ? 'bg-[#3B82F6] text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+            >
+              Semua
+            </button>
+            <button
+              onClick={() => setFilter('lunas')}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${filter === 'lunas'
+                ? 'bg-[#3B82F6] text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+            >
+              Lunas
+            </button>
+            <button
+              onClick={() => setFilter('hutang')}
+              className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${filter === 'hutang'
+                ? 'bg-[#3B82F6] text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+            >
+              Belum Lunas
+            </button>
+          </div>
+          <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-2 w-full sm:w-64 focus-within:ring-1 focus-within:ring-[#3B82F6] focus-within:border-[#3B82F6] transition-all">
+            <Search size={14} className="text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Cari invoice atau distributor..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-transparent border-none text-xs px-2 py-2 outline-none font-medium" 
+            />
+          </div>
         </div>
+        <button
+          onClick={exportPurchasesCSV}
+          className="px-4 py-2 bg-emerald-600/10 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+        >
+          <Download size={14} />
+          Export Excel
+        </button>
       </div>
 
       {/* Table */}
@@ -300,25 +390,33 @@ export default function PembelianTab() {
                 <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Tanggal</th>
                 <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Total</th>
                 <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Sisa Hutang</th>
+                <th className="text-center px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Jatuh Tempo</th>
                 <th className="text-center px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Status</th>
                 <th className="text-center px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredPurchases.map((purchase) => {
-                const total = Number(purchase.total_pembelian);
+              {currentItems.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500 text-sm">
+                    Pencarian pembelian tidak ditemukan
+                  </td>
+                </tr>
+              ) : (
+                currentItems.map((purchase) => {
+                  const total = Number(purchase.total_pembelian);
                 const terbayar = Number(purchase.terbayar);
                 const sisa = total - terbayar;
                 return (
                   <tr key={purchase.id} className="hover:bg-blue-50/50 transition-colors border-b border-gray-50 last:border-0">
                     <td className="px-3 py-2 text-xs">
-                      <p className="font-bold text-xs text-gray-800">{purchase.invoice || '-'}</p>
+                      <p className="font-bold text-gray-800">{purchase.invoice || '-'}</p>
                     </td>
-                    <td className="px-4 py-3 text-gray-700">{purchase.distributor?.name || '-'}</td>
-                    <td className="px-4 py-3 text-gray-700">
+                    <td className="px-3 py-2 text-xs text-gray-700">{purchase.distributor?.name || '-'}</td>
+                    <td className="px-3 py-2 text-xs text-gray-700">
                       {new Date(purchase.tanggal).toLocaleDateString('id-ID')}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-gray-800">
+                    <td className="px-3 py-2 text-xs text-right font-medium text-gray-800">
                       Rp {total.toLocaleString('id-ID')}
                     </td>
                     <td className="px-3 py-2 text-right text-xs">
@@ -329,6 +427,9 @@ export default function PembelianTab() {
                       ) : (
                         <span className="text-gray-400">-</span>
                       )}
+                    </td>
+                    <td className="px-3 py-2 text-center text-xs text-gray-500">
+                      {(sisa > 0 && purchase.jatuh_tempo) ? new Date(purchase.jatuh_tempo).toLocaleDateString('id-ID') : '-'}
                     </td>
                     <td className="px-3 py-2 text-center text-xs">
                       <span
@@ -362,9 +463,52 @@ export default function PembelianTab() {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Footer */}
+        <div className="border-t border-gray-100 px-3 py-2 flex items-center justify-between bg-gray-50/50">
+          <p className="text-[10px] text-gray-500 font-medium">
+            Menampilkan {currentItems.length} dari {filteredPurchases.length} riwayat pembelian
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+              className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={14} className="text-gray-600" />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+              .map((p, idx, arr) => (
+                <span key={p} className="flex items-center">
+                  {idx > 0 && arr[idx - 1] !== p - 1 && (
+                    <span className="text-gray-400 text-[10px] px-0.5">...</span>
+                  )}
+                  <button
+                    onClick={() => setCurrentPage(p)}
+                    className={`min-w-[24px] h-6 text-[11px] font-bold rounded transition-colors ${
+                      currentPage === p
+                        ? 'bg-[#3B82F6] text-white shadow-sm'
+                        : 'text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                </span>
+              ))
+            }
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+              className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight size={14} className="text-gray-600" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -518,9 +662,21 @@ export default function PembelianTab() {
                   </div>
                 </div>
                 {Number(formData.total_pembelian) > Number(formData.terbayar) && (
-                  <p className="text-xs text-red-600 mt-2 bg-red-50 p-2 rounded">
-                    Sisa hutang: Rp {(Number(formData.total_pembelian) - Number(formData.terbayar)).toLocaleString('id-ID')}
-                  </p>
+                  <div className="bg-red-50 p-3 rounded-lg border border-red-100 space-y-3">
+                    <p className="text-xs text-red-600 font-medium">
+                      Sisa hutang: Rp {(Number(formData.total_pembelian) - Number(formData.terbayar)).toLocaleString('id-ID')}
+                    </p>
+                    <div>
+                      <label className="block text-xs font-medium text-red-700 mb-1">Tanggal Jatuh Tempo</label>
+                      <input
+                        type="date"
+                        required
+                        value={formData.jatuh_tempo}
+                        onChange={(e) => setFormData({ ...formData, jatuh_tempo: e.target.value })}
+                        className="w-full px-2.5 py-1.5 border border-red-200 rounded-lg focus:ring-1 text-xs font-medium bg-white focus:ring-red-400 outline-none text-red-800"
+                      />
+                    </div>
+                  </div>
                 )}
               </form>
             </div>

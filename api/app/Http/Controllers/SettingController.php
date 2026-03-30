@@ -29,4 +29,18 @@ class SettingController extends Controller
 
         return response()->json(['message' => 'Pengaturan berhasil diperbarui']);
     }
+
+    public function backupDatabase()
+    {
+        $dbPath = database_path('database.sqlite');
+        
+        if (!file_exists($dbPath)) {
+            return response()->json(['message' => 'File database tidak ditemukan.'], 404);
+        }
+
+        $date = now()->format('Y-m-d_H-i');
+        $filename = "Backup-CahayaKomputer-{$date}.sqlite";
+
+        return response()->download($dbPath, $filename);
+    }
 }

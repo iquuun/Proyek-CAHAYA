@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Trash2, Printer, History, ShoppingCart } from 'lucide-react';
+import { Search, Plus, Trash2, Printer, History, ShoppingCart, Ban, ChevronLeft, ChevronRight, Calendar, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -76,7 +77,37 @@ export default function PenjualanPage() {
   }, [lastSale, shouldPrint]);
   const [taxPercent, setTaxPercent] = useState(0);
 
-  const channels = ['Offline', 'SCahaya Komputer ID', 'SCahaya Tech', 'Lazada', 'Tiktokshop'];
+  // History filters & pagination
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyMonth, setHistoryMonth] = useState('');
+  const [historyPage, setHistoryPage] = useState(1);
+  const historyPerPage = 10;
+
+  // Void modal state
+  const [voidTarget, setVoidTarget] = useState<Sale | null>(null);
+  const [isVoiding, setIsVoiding] = useState(false);
+
+  const confirmVoid = async () => {
+    if (!voidTarget) return;
+    try {
+      setIsVoiding(true);
+      await api.delete(`/sales/${voidTarget.id}`);
+      toast.success(`Transaksi ${voidTarget.invoice} berhasil di-void. Stok telah dikembalikan.`);
+      setVoidTarget(null);
+      const [salesRes, prodRes] = await Promise.all([
+        api.get('/sales'),
+        api.get('/products'),
+      ]);
+      setSales(salesRes.data);
+      setProducts(prodRes.data);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Gagal membatalkan transaksi');
+    } finally {
+      setIsVoiding(false);
+    }
+  };
+
+  const channels = ['Offline', 'Cahaya Komputer ID', 'Cahaya Tech', 'Lazada', 'Tiktokshop'];
 
   const [settings, setSettings] = useState<any>({});
 
@@ -111,6 +142,50 @@ export default function PenjualanPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const exportSalesCSV = () => {
+    const worksheetData: any[][] = [
+      ["LAPORAN SELURUH DATA PENJUALAN"],
+      [],
+      ["Invoice", "Tanggal", "Kasir", "Pemesanan", "Pelanggan", "Total Penjualan", "Pembayaran", "Kembalian"]
+    ];
+
+    const filtered = sales.filter((s) => {
+      const matchSearch = !historySearch || s.invoice.toLowerCase().includes(historySearch.toLowerCase());
+      const matchMonth = !historyMonth || s.tanggal.startsWith(historyMonth);
+      return matchSearch && matchMonth;
+    });
+
+    filtered.forEach(sale => {
+      worksheetData.push([
+        sale.invoice,
+        sale.tanggal,
+        sale.user?.name || 'ADMIN',
+        sale.channel,
+        (sale as any).customer_name || 'UMUM',
+        sale.total_penjualan,
+        sale.pembayaran,
+        sale.kembalian
+      ]);
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    worksheet['!cols'] = [
+      { wch: 20 }, // Invoice
+      { wch: 15 }, // Tanggal
+      { wch: 15 }, // Kasir
+      { wch: 15 }, // Pemesanan
+      { wch: 25 }, // Pelanggan
+      { wch: 15 }, // Total Penjualan
+      { wch: 15 }, // Pembayaran
+      { wch: 15 }  // Kembalian
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Penjualan");
+    
+    XLSX.writeFile(workbook, `Riwayat_Penjualan_${historyMonth || 'Semua'}.xlsx`);
   };
 
   const filteredProducts = products.filter((p) => {
@@ -317,7 +392,7 @@ export default function PenjualanPage() {
 
           {activeTab === 'pos' ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 no-print items-start">
-              
+
               {/* Left: Customer Info & Review E-Faktur */}
               <div className="lg:col-span-2 flex flex-col gap-2.5 h-[calc(100vh-110px)]">
                 {/* Customer Info Form */}
@@ -362,10 +437,10 @@ export default function PenjualanPage() {
                   <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-100 shrink-0">
                     <h3 className="text-sm font-bold text-gray-800 uppercase tracking-tight">REVIEW E-FAKTUR</h3>
                     <div className="flex items-center gap-2">
-                        <button onClick={addManualItem} className="text-[10px] bg-gray-100 border border-gray-200 hover:bg-gray-200 py-1.5 px-2.5 rounded-md font-bold text-gray-700">+ BARIS MANUAL</button>
-                        <select value={channel} onChange={(e) => setChannel(e.target.value)} className="text-[10px] bg-gray-100 border-none rounded-md px-2 py-1.5 outline-none font-bold text-gray-700">
-                          {channels.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
+                      <button onClick={addManualItem} className="text-[10px] bg-gray-100 border border-gray-200 hover:bg-gray-200 py-1.5 px-2.5 rounded-md font-bold text-gray-700">+ BARIS MANUAL</button>
+                      <select value={channel} onChange={(e) => setChannel(e.target.value)} className="text-[10px] bg-gray-100 border-none rounded-md px-2 py-1.5 outline-none font-bold text-gray-700">
+                        {channels.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
                     </div>
                   </div>
 
@@ -466,7 +541,7 @@ export default function PenjualanPage() {
                           />
                         </div>
                       </div>
-                      
+
                       {/* Right side: Grand Total */}
                       <div className="w-full md:w-1/2 flex flex-col items-end">
                         <p className="text-gray-400 font-bold uppercase tracking-wider text-[10px] mb-0.5">TOTAL KESELURUHAN</p>
@@ -487,7 +562,7 @@ export default function PenjualanPage() {
 
               {/* Right: Pilih Produk & Numpad */}
               <div className="lg:col-span-1 flex flex-col gap-2.5 h-[calc(100vh-110px)]">
-                
+
                 {/* Product Search & List */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 flex flex-col flex-1 min-h-0">
                   <div className="shrink-0 mb-2">
@@ -530,11 +605,11 @@ export default function PenjualanPage() {
                               <span className="text-[9px] text-gray-400 uppercase">{product.category?.name || 'UMUM'}</span>
                             </div>
                           </div>
-                          <button 
-                            onClick={() => addItem(product)} 
+                          <button
+                            onClick={() => addItem(product)}
                             className="w-8 h-8 bg-[#3B82F6] text-white rounded-md flex items-center justify-center hover:bg-[#2563EB] shadow-sm transform active:scale-95 transition-all"
                           >
-                            <Plus size={16}/>
+                            <Plus size={16} />
                           </button>
                         </div>
                       ))
@@ -549,7 +624,7 @@ export default function PenjualanPage() {
                       <span className="text-gray-500 font-bold uppercase text-[10px] tracking-wider">Tunai Dibayar</span>
                       <span className="font-black text-xl text-green-600">Rp {parseFloat(payment).toLocaleString('id-ID')}</span>
                     </div>
-                    
+
                     {parseFloat(payment) >= customTotal && customTotal > 0 && (
                       <div className="flex items-center justify-between bg-green-50 text-green-700 px-3 py-2 rounded-md border border-green-100 mt-1.5">
                         <span className="font-bold text-xs">KEMBALIAN</span>
@@ -571,9 +646,9 @@ export default function PenjualanPage() {
                     <button onClick={() => handleNumpadInput('C')} className="h-9 rounded-md text-sm font-black bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 active:bg-red-200 transition-colors">C</button>
                     <button onClick={() => handleNumpadInput('0')} className="h-9 rounded-md text-sm font-bold bg-gray-50 text-gray-800 border border-gray-200 hover:bg-gray-100 active:bg-gray-200 transition-colors">0</button>
                     <button onClick={() => handleNumpadInput('00')} className="h-9 rounded-md text-sm font-bold bg-gray-50 text-gray-800 border border-gray-200 hover:bg-gray-100 active:bg-gray-200 transition-colors">00</button>
-                    
+
                     <button onClick={() => handleNumpadInput('PAS')} className="col-span-3 h-10 mt-1 rounded-md text-[11px] bg-green-100 text-green-700 border border-green-200 hover:bg-green-200 active:bg-green-300 transition-colors font-black tracking-widest uppercase">Uang Pas / Transfer</button>
-                    
+
                     <button
                       onClick={handleSubmit}
                       disabled={saleItems.length === 0 || isSubmitting || parseFloat(payment) < customTotal}
@@ -588,96 +663,274 @@ export default function PenjualanPage() {
             </div>
           ) : (
             /* Sales History Tab */
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden no-print">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Invoice</th>
-                      <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Tanggal</th>
-                      <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Channel</th>
-                      <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Total</th>
-                      <th className="text-center px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Detail</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {sales.map((sale) => (
-                      <tr key={sale.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-3 py-2 font-bold text-gray-800">{sale.invoice}</td>
-                        <td className="px-3 py-2 text-gray-600">{new Date(sale.tanggal).toLocaleString('id-ID')}</td>
-                        <td className="px-3 py-2"><span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-md text-xs font-medium uppercase">{sale.channel}</span></td>
-                        <td className="px-3 py-2 text-right font-bold text-gray-800">Rp {Number(sale.total_penjualan).toLocaleString('id-ID')}</td>
-                        <td className="px-3 py-2 text-center">
-                          <button onClick={() => { setLastSale(sale); setTimeout(() => window.print(), 100); }} className="p-2 text-gray-400 hover:text-[#3B82F6]"><Printer size={18} /></button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="space-y-3 no-print">
+              {/* Filter Bar */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
+                <div className="flex flex-wrap items-end gap-3">
+                  {/* Search */}
+                  <div className="flex-1 min-w-[180px]">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Cari Invoice</label>
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={13} />
+                      <input
+                        type="text"
+                        placeholder="Ketik no invoice..."
+                        value={historySearch}
+                        onChange={(e) => { setHistorySearch(e.target.value); setHistoryPage(1); }}
+                        className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs bg-gray-50"
+                      />
+                    </div>
+                  </div>
+                  {/* Month Filter */}
+                  <div className="min-w-[160px]">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1">Filter Bulan</label>
+                    <div className="relative">
+                      <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={13} />
+                      <input
+                        type="month"
+                        value={historyMonth}
+                        onChange={(e) => { setHistoryMonth(e.target.value); setHistoryPage(1); }}
+                        className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs bg-gray-50"
+                      />
+                    </div>
+                  </div>
+                  {/* Reset */}
+                  <div className="flex items-center gap-2">
+                    {(historySearch || historyMonth) && (
+                      <button
+                        onClick={() => { setHistorySearch(''); setHistoryMonth(''); setHistoryPage(1); }}
+                        className="px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        Reset Filter
+                      </button>
+                    )}
+                    <button
+                      onClick={exportSalesCSV}
+                      className="px-4 py-1.5 bg-emerald-600/10 text-emerald-700 hover:bg-emerald-600 hover:text-white border border-emerald-200 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                    >
+                      <Download size={13} />
+                      Export Excel
+                    </button>
+                  </div>
+                </div>
               </div>
+
+              {/* Table */}
+              {(() => {
+                // Filter logic
+                const filtered = sales.filter((s) => {
+                  const matchSearch = !historySearch || s.invoice.toLowerCase().includes(historySearch.toLowerCase());
+                  const matchMonth = !historyMonth || s.tanggal.startsWith(historyMonth);
+                  return matchSearch && matchMonth;
+                });
+                const totalPages = Math.max(1, Math.ceil(filtered.length / historyPerPage));
+                const paginated = filtered.slice((historyPage - 1) * historyPerPage, historyPage * historyPerPage);
+
+                return (
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Invoice</th>
+                            <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Tanggal</th>
+                            <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Channel</th>
+                            <th className="text-right px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Total</th>
+                            <th className="text-center px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {paginated.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-xs">Tidak ada transaksi ditemukan.</td>
+                            </tr>
+                          ) : paginated.map((sale) => (
+                            <tr key={sale.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-3 py-2 font-bold text-gray-800 text-xs">{sale.invoice}</td>
+                              <td className="px-3 py-2 text-gray-600 text-xs">{new Date(sale.tanggal).toLocaleString('id-ID')}</td>
+                              <td className="px-3 py-2"><span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase">{sale.channel}</span></td>
+                              <td className="px-3 py-2 text-right font-bold text-gray-800 text-xs">Rp {Number(sale.total_penjualan).toLocaleString('id-ID')}</td>
+                              <td className="px-3 py-2 text-center">
+                                <div className="flex items-center justify-center gap-1">
+                                  <button onClick={() => { setLastSale(sale); setTimeout(() => window.print(), 100); }} className="p-1.5 text-gray-400 hover:text-[#3B82F6] hover:bg-blue-50 rounded-md transition-colors" title="Cetak Faktur">
+                                    <Printer size={15} />
+                                  </button>
+                                  <button onClick={() => setVoidTarget(sale)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Void / Batalkan Transaksi">
+                                    <Ban size={15} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination Footer */}
+                    <div className="border-t border-gray-100 px-3 py-2 flex items-center justify-between bg-gray-50/50">
+                      <p className="text-[10px] text-gray-500 font-medium">
+                        Menampilkan {paginated.length} dari {filtered.length} transaksi
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                          disabled={historyPage <= 1}
+                          className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronLeft size={14} className="text-gray-600" />
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1)
+                          .filter(p => p === 1 || p === totalPages || Math.abs(p - historyPage) <= 1)
+                          .map((p, idx, arr) => (
+                            <span key={p}>
+                              {idx > 0 && arr[idx - 1] !== p - 1 && (
+                                <span className="text-gray-400 text-[10px] px-0.5">...</span>
+                              )}
+                              <button
+                                onClick={() => setHistoryPage(p)}
+                                className={`min-w-[24px] h-6 text-[11px] font-bold rounded transition-colors ${historyPage === p
+                                    ? 'bg-[#3B82F6] text-white shadow-sm'
+                                    : 'text-gray-600 hover:bg-gray-200'
+                                  }`}
+                              >
+                                {p}
+                              </button>
+                            </span>
+                          ))
+                        }
+                        <button
+                          onClick={() => setHistoryPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={historyPage >= totalPages}
+                          className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronRight size={14} className="text-gray-600" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
       )}
 
-      {/* FAKTUR TEMPLATE - A4 LANDSCAPE - FULL WIDTH */}
+      {/* ====== VOID CONFIRMATION MODAL ====== */}
+      {voidTarget && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 w-full max-w-sm overflow-hidden animate-in">
+            {/* Red header strip */}
+            <div className="bg-gradient-to-r from-red-500 to-red-600 px-5 py-4 text-center">
+              <div className="mx-auto w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-2">
+                <Ban size={24} className="text-white" />
+              </div>
+              <h3 className="text-white font-bold text-sm">Void Transaksi</h3>
+              <p className="text-red-100 text-[11px] mt-0.5">Aksi ini tidak bisa dibatalkan</p>
+            </div>
+
+            {/* Content */}
+            <div className="p-5">
+              <div className="bg-gray-50 rounded-xl p-3 space-y-2 mb-4">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500 font-medium">Invoice</span>
+                  <span className="font-bold text-gray-800">{voidTarget.invoice}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500 font-medium">Tanggal</span>
+                  <span className="text-gray-700">{new Date(voidTarget.tanggal).toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500 font-medium">Channel</span>
+                  <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold uppercase">{voidTarget.channel}</span>
+                </div>
+                <div className="border-t border-gray-200 pt-2 flex justify-between text-xs">
+                  <span className="text-gray-500 font-bold">Total</span>
+                  <span className="font-black text-red-600 text-sm">Rp {Number(voidTarget.total_penjualan).toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 mb-4">
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  <strong>⚠️ Perhatian:</strong> Stok barang yang terjual pada transaksi ini akan <strong>otomatis dikembalikan</strong> ke inventaris.
+                </p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setVoidTarget(null)}
+                  disabled={isVoiding}
+                  className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-200 transition-colors disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={confirmVoid}
+                  disabled={isVoiding}
+                  className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                >
+                  <Ban size={13} />
+                  {isVoiding ? 'Memproses...' : 'Ya, Void Transaksi'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FAKTUR TEMPLATE - Continuous Form 21cm x 14.5cm */}
       <div id="print-area" className="faktur-print bg-white text-black font-sans" style={{ width: '100%', margin: '0' }}>
         {lastSale && (
-          <div className="bg-white">
-            {/* ===== HEADER BOX (Matched to Reference) ===== */}
-            {/* Header with Store Info and Faktur box */}
+          <div className="bg-white" style={{ fontSize: '14px', fontWeight: 'normal', fontFamily: '"Courier New", Courier, monospace' }}>
+            {/* ===== HEADER ===== */}
             <table className="w-full border-collapse">
               <tbody>
                 <tr>
-                  <td className="p-1" style={{ width: '60%', verticalAlign: 'top' }}>
-                    <div className="flex items-center gap-4">
+                  <td style={{ width: '55%', verticalAlign: 'top', padding: '0' }}>
+                    <div className="flex items-start gap-3">
                       {settings.store_logo && (
                         <img
                           src={`${api.defaults.baseURL?.replace('/api', '')}/storage/${settings.store_logo}`}
                           alt="Logo"
-                          className="h-14 w-14 object-contain"
+                          style={{ height: '52px', width: '52px', objectFit: 'contain' }}
                         />
                       )}
-                      <div className="color-[#000]">
-                        <h1 style={{ fontSize: '28px', fontWeight: 'bold', textTransform: 'uppercase', lineHeight: '1.0', margin: '0' }}>{settings.store_name || 'CAHAYA KOMPUTER ID'}</h1>
-                        <p style={{ fontSize: '15px', fontWeight: 'bold', marginTop: '2px' }}>{settings.store_address || 'Alamat Toko Belum Diatur'}</p>
-                        <p style={{ fontSize: '15px', fontWeight: 'bold' }}>Telepon/HP : {settings.store_phone || '-'}</p>
+                      <div>
+                        <div style={{ fontSize: '19px', fontWeight: 'bold', textTransform: 'uppercase', lineHeight: '1.1' }}>{settings.store_name || 'CAHAYA KOMPUTER ID'}</div>
+                        <div style={{ fontSize: '11px', marginTop: '2px', fontWeight: 'normal' }}>{settings.store_address || 'Alamat Toko Belum Diatur'}</div>
+                        <div style={{ fontSize: '11px', fontWeight: 'normal' }}>Telepon/HP : {settings.store_phone || '-'}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="p-1 text-right" style={{ width: '40%', verticalAlign: 'top' }}>
-                    <h1 style={{ fontSize: '28px', fontWeight: 'bold', textTransform: 'uppercase', lineHeight: '1.0', margin: 0 }}>FAKTUR PENJUALAN</h1>
-                    <div style={{ fontSize: '15px', fontWeight: 'bold', marginTop: '4px' }}>
-                      {new Date(lastSale.tanggal).toLocaleDateString('id-ID')} ## {new Date(lastSale.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                    </div>
+                  <td style={{ width: '45%', verticalAlign: 'top', textAlign: 'right', padding: '0' }}>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold', textTransform: 'uppercase', lineHeight: '1.1', border: '2px solid black', display: 'inline-block', padding: '4px 10px' }}>FAKTUR PENJUALAN</div>
                   </td>
                 </tr>
               </tbody>
             </table>
 
-            {/* Top Horizontal Line */}
-            <div className="border-b-[2px] border-black w-full my-1"></div>
-
-            {/* Info table (Customer and Trans details) */}
-            <table className="w-full border-collapse text-[18px] font-bold">
+            {/* Customer & Transaction Info */}
+            <table className="w-full border-collapse" style={{ fontSize: '13px', marginTop: '4px' }}>
               <tbody>
                 <tr>
-                  <td className="py-1" style={{ width: '55%', verticalAlign: 'top' }}>
-                    <div className="space-y-0.5 color-[#000]">
-                      <p className="underline">Kepada Yth.</p>
-                      <p className="uppercase" style={{ fontSize: '20px' }}>{(lastSale as any).customer_name || 'UMUM'}</p>
-                      <table className="border-collapse mt-1" style={{ fontSize: '16px' }}>
+                  <td style={{ width: '65%', verticalAlign: 'top', padding: '2px 0' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                        <span>Kepada Yth.</span>
+                        <span>:</span>
+                        <span style={{ fontSize: '15px', textTransform: 'uppercase', fontWeight: 'bold' }}>{(lastSale as any).customer_name || 'UMUM'}</span>
+                      </div>
+                      <table className="border-collapse" style={{ fontSize: '13px', marginTop: '1px' }}>
                         <tbody>
-                          <tr><td style={{ width: '100px' }}>Alamat</td><td style={{ width: '10px' }}>:</td><td>{(lastSale as any).customer_address || '-'}</td></tr>
+                          <tr><td style={{ width: '68px' }}>Alamat</td><td style={{ width: '10px' }}>:</td><td>{(lastSale as any).customer_address || '-'}</td></tr>
                           <tr><td>No. HP</td><td>:</td><td>{(lastSale as any).customer_phone || '-'}</td></tr>
                         </tbody>
                       </table>
                     </div>
                   </td>
-                  <td className="py-1" style={{ width: '45%', verticalAlign: 'top' }}>
-                    <table className="w-full border-collapse color-[#000]" style={{ marginLeft: 'auto', textAlign: 'left' }}>
+                  <td style={{ width: '35%', verticalAlign: 'top', padding: '2px 0' }}>
+                    <table className="w-full border-collapse" style={{ fontSize: '13px', textAlign: 'left' }}>
                       <tbody>
-                        <tr><td style={{ width: '120px' }}>Tanggal / Jam</td><td style={{ width: '10px' }}>:</td><td>{new Date(lastSale.tanggal).toLocaleDateString('id-ID')} {new Date(lastSale.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td></tr>
+                        <tr><td style={{ width: '110px' }}>Tanggal / Jam</td><td style={{ width: '10px' }}>:</td><td>{new Date(lastSale.tanggal).toLocaleDateString('id-ID')} {new Date(lastSale.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td></tr>
                         <tr><td>No. Faktur</td><td>:</td><td className="uppercase">{lastSale.invoice}</td></tr>
                         <tr><td>Kasir</td><td>:</td><td className="uppercase">{lastSale.user?.name || user?.name || 'ADMIN'}</td></tr>
                         <tr><td>Pemesanan</td><td>:</td><td className="uppercase">{lastSale.channel}</td></tr>
@@ -688,39 +941,33 @@ export default function PenjualanPage() {
               </tbody>
             </table>
 
-            {/* Info Horizontal Line */}
-            <div className="border-b-[2px] border-black w-full mt-1 mb-2"></div>
-
-            <table className="w-full border-collapse text-[18px] color-[#000] font-bold" style={{ tableLayout: 'fixed' }}>
+            {/* Items Table */}
+            <table className="w-full border-collapse" style={{ fontSize: '14px', tableLayout: 'fixed', marginTop: '4px' }}>
               <thead>
-                <tr className="border-y-[2px] border-black">
-                  <th className="py-2 px-1 text-left" style={{ width: '50px' }}>No</th>
-                  <th className="py-2 px-1 text-left" style={{ width: 'auto' }}>Nama Barang</th>
-                  <th className="py-2 px-1 text-center" style={{ width: '70px' }}>Qty</th>
-                  <th className="py-2 px-1 text-center" style={{ width: '90px' }}>Satuan</th>
-                  <th className="py-2 px-1 text-right" style={{ width: '160px' }}>Harga</th>
-                  <th className="py-2 px-1 text-right" style={{ width: '180px' }}>Sub Total</th>
+                <tr style={{ borderTop: '1.5px solid black', borderBottom: '1.5px solid black' }}>
+                  <th style={{ padding: '3px 2px', textAlign: 'left', width: 'auto' }}>Nama Produk</th>
+                  <th style={{ padding: '3px 2px', textAlign: 'center', width: '40px' }}>Qty</th>
+                  <th style={{ padding: '3px 2px', textAlign: 'center', width: '60px' }}>Satuan</th>
+                  <th style={{ padding: '3px 2px', textAlign: 'center', width: '110px' }}>Harga Satuan</th>
+                  <th style={{ padding: '3px 2px', textAlign: 'center', width: '110px' }}>Jumlah</th>
                 </tr>
               </thead>
               <tbody>
                 {(() => {
-                  let noCount = 0;
                   return [...lastSale.items].map((item, idx) => {
                     const isSubItem = !!item.parent_id;
-                    if (!isSubItem) noCount++;
                     return (
-                      <tr key={idx} className="leading-tight font-bold">
-                        <td className="py-1 px-1 text-left">{!isSubItem && noCount}</td>
-                        <td className={`py-1 px-1 ${isSubItem ? 'pl-8' : ''}`}>
+                      <tr key={idx} style={{ lineHeight: '1.4' }}>
+                        <td style={{ padding: '1px 2px', paddingLeft: isSubItem ? '16px' : '2px' }}>
                           {item.product?.name || item.manual_name || 'Unit'}
                         </td>
-                        <td className="py-1 px-1 text-center">{item.qty}</td>
-                        <td className="py-1 px-1 text-center">{item.satuan || 'PCS'}</td>
-                        <td className="py-1 px-1 text-right">
-                          {isSubItem ? '0' : Number(item.harga_jual_saat_itu).toLocaleString('id-ID')}
+                        <td style={{ padding: '1px 2px', textAlign: 'center' }}>{item.qty}</td>
+                        <td style={{ padding: '1px 2px', textAlign: 'center' }}>{item.satuan || 'PCS'}</td>
+                        <td style={{ padding: '1px 2px', textAlign: 'right' }}>
+                          {isSubItem ? '' : Number(item.harga_jual_saat_itu).toLocaleString('id-ID')}
                         </td>
-                        <td className="py-1 px-1 text-right">
-                          {isSubItem ? '0' : (item.qty * Number(item.harga_jual_saat_itu)).toLocaleString('id-ID')}
+                        <td style={{ padding: '1px 2px', textAlign: 'right' }}>
+                          {isSubItem ? '' : (item.qty * Number(item.harga_jual_saat_itu)).toLocaleString('id-ID')}
                         </td>
                       </tr>
                     );
@@ -729,43 +976,48 @@ export default function PenjualanPage() {
               </tbody>
             </table>
 
-            {/* Table Bottom Horizontal Line */}
-            <div className="border-b-[2px] border-black w-full my-1"></div>
+            {/* Line */}
+            <div style={{ borderBottom: '1.5px solid black', margin: '3px 0' }}></div>
 
-            <div className="flex justify-between items-start mt-4">
-              {/* Keterangan and Totals Section */}
-              <div className="w-[55%] color-[#000]">
-                <div className="font-bold text-[18px]">KETERANGAN:</div>
-                <div className="text-[17px] whitespace-pre-line leading-tight font-bold">
-                  {settings.store_notes || 'Terima kasih atas kepercayaan Anda.\nMohon simpan Faktur ini sebagai bukti transaksi.\nBerlaku Untuk Claim Garansi'}
+            {/* Keterangan + Totals */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: '4px' }}>
+              <div style={{ width: '50%', fontSize: '13px' }}>
+                <div>Keterangan:</div>
+                <div style={{ whiteSpace: 'pre-line', lineHeight: '1.4', marginTop: '2px' }}>
+                  {settings.store_notes || 'Terima kasih atas kepercayaan Anda.\nMohon simpan Faktur ini sebagai bukti transaksi.'}
                 </div>
+                <div style={{ marginTop: '6px' }}>Berlaku Untuk Claim Garansi</div>
               </div>
 
-              <div className="w-[40%] text-[18px] color-[#000]">
-                <table className="w-full border-collapse font-bold">
+              <div style={{ width: '45%', fontSize: '14px' }}>
+                <table className="w-full border-collapse">
                   <tbody>
-                    <tr><td className="py-0.5 text-left">Subtotal :</td><td className="text-right">{Number(lastSale?.total_penjualan || 0).toLocaleString('id-ID')}</td></tr>
-                    <tr><td className="py-0.5 text-left">Pajak (0.00%) :</td><td className="text-right">0</td></tr>
-                    <tr className="border-y-[2px] border-black my-1">
-                      <td className="py-1 text-left text-[20px]">Total :</td>
-                      <td className="text-right text-[20px]">{Number(lastSale?.total_penjualan || 0).toLocaleString('id-ID')}</td>
+                    <tr><td style={{ padding: '2px 0', textAlign: 'left' }}>Subtotal :</td><td style={{ textAlign: 'right' }}>{Number(lastSale?.total_penjualan || 0).toLocaleString('id-ID')}</td></tr>
+                    <tr><td style={{ padding: '2px 0', textAlign: 'left' }}>Pajak ({lastSale?.tax_percent || 0}%) :</td><td style={{ textAlign: 'right' }}>{Number(lastSale?.tax_amount || 0).toLocaleString('id-ID')}</td></tr>
+                    <tr style={{ borderTop: '1.5px solid black' }}>
+                      <td style={{ padding: '3px 0', textAlign: 'left', fontSize: '15px' }}>Total :</td>
+                      <td style={{ textAlign: 'right', fontSize: '15px', fontWeight: 'bold' }}>{Number(lastSale?.total_penjualan || 0).toLocaleString('id-ID')}</td>
                     </tr>
-                    <tr><td className="py-1 text-left">Tunai :</td><td className="text-right">{Number(lastSale?.pembayaran || 0).toLocaleString('id-ID')}</td></tr>
-                    <tr><td className="py-0.5 text-left">Kembalian :</td><td className="text-right">{Number(lastSale?.kembalian || 0).toLocaleString('id-ID')}</td></tr>
+                  </tbody>
+                </table>
+                <div style={{ borderBottom: '1.5px solid black', margin: '2px 0' }}></div>
+                <table className="w-full border-collapse">
+                  <tbody>
+                    <tr><td style={{ padding: '2px 0', textAlign: 'left' }}>Tunai :</td><td style={{ textAlign: 'right' }}>{Number(lastSale?.pembayaran || 0).toLocaleString('id-ID')}</td></tr>
                   </tbody>
                 </table>
               </div>
             </div>
 
-            {/* FULL WIDTH SIGNATURE SECTION */}
-            <div className="mt-12 flex justify-between w-full text-[18px] font-bold color-[#000]">
-              <div className="text-center" style={{ width: '200px' }}>
+            {/* Signature Section */}
+            <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+              <div style={{ textAlign: 'center', width: '160px' }}>
                 <p>Hormat Kami,</p>
-                <div className="mt-16 uppercase">{settings.store_name || 'CAHAYA KOMPUTER ID'}</div>
+                <div style={{ marginTop: '40px', textDecoration: 'underline', textTransform: 'uppercase' }}>{settings.store_name || 'Cahaya Komputer'}</div>
               </div>
-              <div className="text-center" style={{ width: '200px' }}>
+              <div style={{ textAlign: 'center', width: '160px' }}>
                 <p>Diterima Oleh,</p>
-                <div className="mt-16">( ........................ )</div>
+                <div style={{ marginTop: '40px' }}>___________________</div>
               </div>
             </div>
           </div>
@@ -776,38 +1028,42 @@ export default function PenjualanPage() {
         .faktur-print { display: none; }
 
         @media print {
-          body { 
+          html, body { 
             visibility: hidden !important; 
             margin: 0 !important; 
             padding: 0 !important;
+            background-color: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
           
           #print-area {
             visibility: visible !important;
             display: block !important;
             position: absolute !important;
-            left: 0.25px !important;
-            top: 0.10px !important;
-            width: 100% !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 21cm !important;
             margin: 0 !important;
-            padding: 0 !important;
+            padding: 7mm 5mm 2mm 5mm !important;
             height: auto !important;
             background: white !important;
+            box-sizing: border-box !important;
           }
 
-          #print-area * {
+          #print-area, #print-area * {
             visibility: visible !important;
-            color: black !important;
-            border-color: black !important;
+            color: #000 !important;
+            border-color: #000 !important;
             background: transparent !important;
-            font-family: 'Arial', 'Helvetica', sans-serif !important;
+            font-family: "Courier New", Courier, monospace !important;
+            font-weight: bold !important;
             -webkit-font-smoothing: none !important;
-            -moz-osx-font-smoothing: unset !important;
             text-rendering: optimizeSpeed !important;
           }
 
           @page {
-            size: A4 portrait;
+            size: 21.00cm 13.97cm;
             margin: 0;
           }
         }

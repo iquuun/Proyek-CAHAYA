@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Upload, Store, MapPin } from 'lucide-react';
+import { Save, Upload, Store, MapPin, Database, DownloadCloud } from 'lucide-react';
 import api from '../api';
 import { toast } from 'sonner';
 
@@ -12,6 +12,7 @@ export default function PengaturanPage() {
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [downloading, setDownloading] = useState(false);
 
     useEffect(() => {
         fetchSettings();
@@ -62,6 +63,38 @@ export default function PengaturanPage() {
             toast.error('Gagal menyimpan pengaturan');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleBackup = async () => {
+        try {
+            setDownloading(true);
+            const res = await api.get('/settings/backup', { responseType: 'blob' });
+            
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            
+            const contentDisposition = res.headers['content-disposition'];
+            let filename = `Backup-CahayaKomputer-${new Date().toISOString().split('T')[0]}.sqlite`;
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+                if (filenameMatch && filenameMatch.length === 2)
+                    filename = filenameMatch[1];
+            }
+            
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            
+            window.URL.revokeObjectURL(url);
+            toast.success('Backup berhasil diunduh! Silakan simpan ke Google Drive Anda.');
+        } catch (err) {
+            console.error(err);
+            toast.error('Gagal men-download backup.');
+        } finally {
+            setDownloading(false);
         }
     };
 
@@ -171,6 +204,35 @@ export default function PengaturanPage() {
                     </button>
                 </div>
             </div>
+
+            {/* BACKUP SECTION */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mt-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b border-gray-50 pb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-600">
+                            <Database size={16} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-gray-800">Backup & Keamanan</h2>
+                            <p className="text-xs text-gray-500 mt-0.5">Amankan data toko Anda (Produk, Faktur, Stok) menjadi 1 file.</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleBackup}
+                        disabled={downloading}
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg font-bold shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 disabled:opacity-75 disabled:cursor-wait transition-all active:scale-95 text-sm"
+                    >
+                        <DownloadCloud size={16} />
+                        {downloading ? 'Memproses...' : 'Download Database (.sqlite)'}
+                    </button>
+                </div>
+                
+                <div className="text-xs leading-relaxed bg-amber-50 text-amber-800 p-3.5 rounded-lg border border-amber-200">
+                    <strong className="block mb-1 text-amber-900">?? Tips Penting (Wajib Dibaca):</strong> 
+                    Klik tombol di atas untuk mengunduh seluruh data aplikasi. <strong>File backup yang terdownload WAJIB Anda pindahkan / seret ke dalam <span className="underline">Google Drive</span> atau simpan di Flashdisk Anda!</strong> Lakukan proses ini secara rutin <strong>minimal 1 minggu sekali</strong> untuk berjaga-jaga apabila komputer/laptop kasir ini mengalami kerusakan/mati total di kemudian hari.
+                </div>
+            </div>
         </div>
     );
 }
+

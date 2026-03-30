@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: 'http://localhost:8000/api', // Default local Laravel port
+    // Dynamic host enables LAN devices (Computer 2) to connect automatically
+    baseURL: `http://${window.location.hostname}:8000/api`, 
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'

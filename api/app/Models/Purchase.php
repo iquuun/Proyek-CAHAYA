@@ -13,6 +13,7 @@ class Purchase extends Model
         'total_pembelian',
         'terbayar',
         'status_pembayaran',
+        'jatuh_tempo',
     ];
 
     public function distributor()
