@@ -134,7 +134,16 @@ export default function PembukuanPenjualanTab() {
     return sum + (Number(s.masuk_dp || 0) - Number(s.harga_modal_manual || 0));
   }, 0);
 
-  if (loading) return <div className="p-10 text-center text-gray-500">Memuat pembukuan...</div>;
+  if (loading) return (
+    <div className="space-y-6 animate-pulse">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3"><div className="flex gap-3"><div className="h-9 bg-gray-200 rounded-lg w-24" /><div className="h-9 bg-gray-200 rounded-lg w-36" /></div></div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">{[...Array(4)].map((_, i) => (<div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-3"><div className="h-3 bg-gray-200 rounded w-20 mb-2" /><div className="h-6 bg-gray-200 rounded w-28" /></div>))}</div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="h-10 bg-gray-100 border-b border-gray-200" />
+        <div className="divide-y divide-gray-100">{[...Array(5)].map((_, i) => (<div key={i} className="px-4 py-3 flex gap-4"><div className="h-4 bg-gray-200 rounded w-1/6" /><div className="h-4 bg-gray-200 rounded w-1/4" /><div className="h-4 bg-gray-200 rounded w-1/6 ml-auto" /></div>))}</div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-4">

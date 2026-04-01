@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# PENTING: Lindungi konfigurasi & database lokal dari overwrite saat update
+api/.env
+api/database/*.sqlite
+api/database/backups/

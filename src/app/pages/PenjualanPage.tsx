@@ -369,7 +369,21 @@ export default function PenjualanPage() {
   return (
     <>
       {loading ? (
-        <div className="p-8 text-center text-gray-500 no-print">Memuat Kasir...</div>
+        <div className="space-y-6 animate-pulse no-print">
+          <div className="flex gap-2 bg-white p-1 rounded-xl shadow-sm border border-gray-100 max-w-fit">
+            <div className="h-8 bg-gray-200 rounded-md w-20" /><div className="h-8 bg-gray-200 rounded-md w-32" />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="lg:col-span-2 space-y-3">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3"><div className="h-4 bg-gray-200 rounded w-36 mb-3" /><div className="grid grid-cols-3 gap-2">{[...Array(3)].map((_, i) => (<div key={i}><div className="h-3 bg-gray-200 rounded w-20 mb-1" /><div className="h-8 bg-gray-100 rounded-md" /></div>))}</div></div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3"><div className="h-4 bg-gray-200 rounded w-28 mb-3" /><div className="h-[200px] bg-gray-50 rounded-lg flex items-center justify-center"><div className="h-12 w-12 bg-gray-200 rounded-lg" /></div></div>
+            </div>
+            <div className="space-y-3">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3"><div className="h-4 bg-gray-200 rounded w-24 mb-2" /><div className="h-8 bg-gray-200 rounded-lg mb-2" /><div className="space-y-2">{[...Array(4)].map((_, i) => (<div key={i} className="h-16 bg-gray-50 rounded-lg border border-gray-100" />))}</div></div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3"><div className="grid grid-cols-3 gap-1.5">{[...Array(12)].map((_, i) => (<div key={i} className="h-9 bg-gray-100 rounded-md" />))}</div></div>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="space-y-6">
           {/* Tab Switcher */}

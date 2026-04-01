@@ -1,5 +1,4 @@
 import { useLocation } from 'react-router';
-import { Bell } from 'lucide-react';
 
 const pathNames: Record<string, string> = {
   '/': 'Dashboard',
@@ -10,8 +9,9 @@ const pathNames: Record<string, string> = {
   '/garansi': 'Garansi',
   '/kalkulator': 'Kalkulator Rakitan',
   '/cash-flow': 'Cash Flow',
-  '/laporan-laba': 'Laporan Laba',
   '/nilai-aset': 'Nilai Aset',
+  '/pengaturan': 'Pengaturan Toko',
+  '/users': 'Manajemen Akun',
 };
 
 export default function Topbar() {
@@ -30,10 +30,6 @@ export default function Topbar() {
             day: 'numeric',
           })}
         </div>
-        <button className="p-1.5 rounded-md hover:bg-gray-100 relative transition-colors shadow-sm">
-          <Bell size={16} className="text-gray-500" />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full ring-2 ring-white"></span>
-        </button>
       </div>
     </div>
   );

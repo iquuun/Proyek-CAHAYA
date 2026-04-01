@@ -70,7 +70,47 @@ export default function Dashboard() {
   }, []);
 
   if (loading) {
-    return <div className="p-10 text-center text-gray-500">Memuat data dashboard...</div>;
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 bg-gray-200 rounded w-20" />
+                  <div className="h-6 bg-gray-200 rounded w-28" />
+                  <div className="h-3 bg-gray-200 rounded w-16" />
+                </div>
+                <div className="w-12 h-12 bg-gray-200 rounded-xl" />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
+            <div className="h-4 bg-gray-200 rounded w-48 mb-3" />
+            <div className="h-[220px] bg-gray-100 rounded-lg" />
+          </div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
+            <div className="h-4 bg-gray-200 rounded w-32 mb-3" />
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex justify-between p-2.5 bg-gray-50 rounded-xl">
+                  <div className="space-y-1.5">
+                    <div className="h-4 bg-gray-200 rounded w-24" />
+                    <div className="h-3 bg-gray-200 rounded w-16" />
+                  </div>
+                  <div className="space-y-1.5 text-right">
+                    <div className="h-4 bg-gray-200 rounded w-20 ml-auto" />
+                    <div className="h-3 bg-gray-200 rounded w-12 ml-auto" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!data) return null;

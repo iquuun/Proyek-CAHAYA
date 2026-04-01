@@ -47,7 +47,19 @@ export default function NilaiAsetPage() {
   }
 
   if (loading) {
-    return <div className="p-10 text-center text-gray-500">Memuat analisis aset...</div>;
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div><div className="h-5 bg-gray-200 rounded w-32 mb-2" /><div className="h-3 bg-gray-200 rounded w-56" /></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="bg-[#3B82F6]/20 rounded-lg p-4"><div className="h-4 bg-blue-200 rounded w-28 mb-3" /><div className="h-7 bg-blue-200 rounded w-40" /></div>
+          {[...Array(2)].map((_, i) => (<div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-3"><div className="h-4 bg-gray-200 rounded w-24 mb-3" /><div className="h-7 bg-gray-200 rounded w-16" /></div>))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3"><div className="h-4 bg-gray-200 rounded w-40 mb-3" /><div className="h-[300px] bg-gray-100 rounded-lg" /></div>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3"><div className="h-4 bg-gray-200 rounded w-40 mb-3" /><div className="space-y-3">{[...Array(4)].map((_, i) => (<div key={i} className="p-3 bg-gray-50 rounded-lg"><div className="h-4 bg-gray-200 rounded w-24 mb-2" /><div className="h-5 bg-gray-200 rounded w-32" /></div>))}</div></div>
+        </div>
+      </div>
+    );
   }
 
   if (!data) return null;

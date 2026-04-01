@@ -47,7 +47,16 @@ export default function HutangDistributorPage() {
     return <Navigate to="/" replace />;
   }
 
-  if (loading) return <div className="p-5 text-center text-gray-500">Memuat data hutang...</div>;
+  if (loading) return (
+    <div className="space-y-6 animate-pulse">
+      <div><div className="h-5 bg-gray-200 rounded w-48 mb-2" /><div className="h-3 bg-gray-200 rounded w-64" /></div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">{[...Array(3)].map((_, i) => (<div key={i} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4"><div className="h-3 bg-gray-200 rounded w-20 mb-2" /><div className="h-6 bg-gray-200 rounded w-28" /></div>))}</div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="h-10 bg-gray-100 border-b border-gray-200" />
+        <div className="divide-y divide-gray-100">{[...Array(5)].map((_, i) => (<div key={i} className="px-4 py-3 flex gap-4"><div className="h-4 bg-gray-200 rounded w-1/4" /><div className="h-4 bg-gray-200 rounded w-1/6" /><div className="h-4 bg-gray-200 rounded w-1/6 ml-auto" /></div>))}</div>
+      </div>
+    </div>
+  );
   if (error) return <div className="p-5 text-center text-red-500">{error}</div>;
 
   const hutangList = purchases.filter(p => p.status_pembayaran === 'hutang' || Number(p.total_pembelian) > Number(p.terbayar));

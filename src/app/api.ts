@@ -1,8 +1,10 @@
 import axios from 'axios';
 
+const hostname = window.location.hostname === 'localhost' ? '127.0.0.1' : window.location.hostname;
+
 const api = axios.create({
     // Dynamic host enables LAN devices (Computer 2) to connect automatically
-    baseURL: `http://${window.location.hostname}:8000/api`, 
+    baseURL: `http://${hostname}:8000/api`, 
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'

@@ -5,12 +5,10 @@ import Dashboard from "./pages/Dashboard";
 import PenjualanPage from "./pages/PenjualanPage";
 import PembelianPage from "./pages/PembelianPage";
 import ProdukPage from "./pages/ProdukPage";
-import KategoriPage from "./pages/KategoriTab"; // I renamed the file so I need to check routes.ts imports
 import StokOpnamePage from "./pages/StokOpnamePage";
 import GaransiPage from "./pages/GaransiPage";
 import KalkulatorRakitanPage from "./pages/KalkulatorRakitanPage";
 import CashFlowPage from "./pages/CashFlowPage";
-import LaporanLabaPage from "./pages/LaporanLabaPage";
 import NilaiAsetPage from "./pages/NilaiAsetPage";
 import PengaturanPage from "./pages/PengaturanPage";
 import UsersPage from "./pages/UsersPage";
@@ -32,7 +30,6 @@ export const router = createBrowserRouter([
       { path: "garansi", Component: GaransiPage },
       { path: "kalkulator", Component: KalkulatorRakitanPage },
       { path: "cash-flow", Component: CashFlowPage },
-      { path: "laporan-laba", Component: LaporanLabaPage },
       { path: "nilai-aset", Component: NilaiAsetPage },
       { path: "pengaturan", Component: PengaturanPage },
       { path: "users", Component: UsersPage },

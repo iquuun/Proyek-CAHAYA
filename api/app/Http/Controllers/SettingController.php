@@ -43,4 +43,41 @@ class SettingController extends Controller
 
         return response()->download($dbPath, $filename);
     }
+
+    public function restoreDatabase(Request $request)
+    {
+        $request->validate([
+            'backup_file' => 'required|file',
+        ]);
+
+        $file = $request->file('backup_file');
+        
+        $extension = $file->getClientOriginalExtension();
+        if ($extension !== 'sqlite' && $extension !== 'db' && $file->getClientOriginalName() !== 'database.sqlite') {
+            // Also checking if the original name is just 'database.sqlite' because sometimes extension is empty
+            $name_parts = explode('.', $file->getClientOriginalName());
+            $ext = end($name_parts);
+            if ($ext !== 'sqlite' && $ext !== 'db') {
+                 return response()->json(['message' => 'Format file tidak valid. Ekstensi harus .sqlite atau .db'], 400);
+            }
+        }
+
+        $dbPath = database_path('database.sqlite');
+        
+        // Backup existing just in case
+        if (file_exists($dbPath)) {
+            copy($dbPath, database_path('database_temp_backup.sqlite'));
+        }
+
+        try {
+            $file->move(database_path(), 'database.sqlite');
+            return response()->json(['message' => 'Database berhasil dipulihkan dari backup.']);
+        } catch (\Exception $e) {
+            // Restore previous backup if failed
+            if (file_exists(database_path('database_temp_backup.sqlite'))) {
+                copy(database_path('database_temp_backup.sqlite'), $dbPath);
+            }
+            return response()->json(['message' => 'Terjadi kesalahan saat mengembalikan database: ' . $e->getMessage()], 500);
+        }
+    }
 }

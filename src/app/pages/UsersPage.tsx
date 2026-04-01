@@ -116,7 +116,18 @@ export default function UsersPage() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-gray-500">Memuat data pengguna...</div>;
+  if (loading) return (
+    <div className="space-y-6 animate-pulse">
+      <div className="flex items-center justify-between">
+        <div><div className="h-5 bg-gray-200 rounded w-48 mb-2" /><div className="h-3 bg-gray-200 rounded w-64" /></div>
+        <div className="h-9 bg-gray-200 rounded-lg w-36" />
+      </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="h-10 bg-gray-100 border-b border-gray-200" />
+        <div className="divide-y divide-gray-100">{[...Array(4)].map((_, i) => (<div key={i} className="px-4 py-3 flex gap-4"><div className="h-4 bg-gray-200 rounded w-1/4" /><div className="h-4 bg-gray-200 rounded w-1/4" /><div className="h-4 bg-gray-200 rounded w-1/6" /><div className="h-4 bg-gray-200 rounded w-1/6 ml-auto" /></div>))}</div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">

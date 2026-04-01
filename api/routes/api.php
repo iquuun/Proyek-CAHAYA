@@ -16,15 +16,18 @@ use App\Http\Controllers\NilaiAsetController;
 use App\Http\Controllers\StockOpnameController;
 use App\Http\Controllers\WarrantyController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\SystemController;
 
 Route::post('/login', [AuthController::class , 'login']);
-Route::get('/settings', [SettingController::class , 'index']); // Public so anyone can see the app logo/name
+Route::get('/settings', [SettingController::class , 'index']);
+Route::get('/ping', [SystemController::class, 'ping']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard', [DashboardController::class , 'index']);
     Route::get('/laporan-laba', [LaporanLabaController::class , 'index']);
     Route::get('/nilai-aset', [NilaiAsetController::class , 'index']);
     Route::get('/settings/backup', [SettingController::class, 'backupDatabase']);
+    Route::post('/settings/restore', [SettingController::class, 'restoreDatabase']);
     Route::post('/settings', [SettingController::class , 'update']);
     Route::post('/logout', [AuthController::class , 'logout']);
     Route::get('/me', [AuthController::class , 'me']);
@@ -55,4 +58,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Garansi
     Route::apiResource('warranties', WarrantyController::class);
+
+    // DANGER ZONE: Reset all data (owner only)
+    Route::post('system/reset-all-data', [SystemController::class, 'resetAllData']);
 });
