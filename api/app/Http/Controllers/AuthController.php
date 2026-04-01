@@ -16,9 +16,20 @@ class AuthController extends Controller
             'password' => 'required'
         ]);
 
-        $user = User::where('email', $request->email)->first();
+        $email = trim($request->email);
+        \Log::info("Login attempt for email: '{$email}'");
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            \Log::warning("Login failed: User not found for email '{$email}'");
+            return response()->json([
+                'message' => 'Email atau Password salah'
+            ], 401);
+        }
+
+        if (!Hash::check($request->password, $user->password)) {
+            \Log::warning("Login failed: Password mismatch for email '{$email}'");
             return response()->json([
                 'message' => 'Email atau Password salah'
             ], 401);

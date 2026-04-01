@@ -17,13 +17,15 @@ class SystemController extends Controller
     public static function ensureDefaultUsers(): void
     {
         try {
+            $userTable = (new User)->getTable();
+
             // Step 1: Ensure tables exist
-            if (!Schema::hasTable('users')) {
+            if (!Schema::hasTable($userTable)) {
                 Artisan::call('migrate', ['--force' => true]);
             }
 
             // Step 2: Ensure default users exist
-            if (Schema::hasTable('users') && User::count() === 0) {
+            if (Schema::hasTable($userTable) && User::count() === 0) {
                 User::create([
                     'name' => 'Owner Cahaya',
                     'email' => 'owner@cahaya.id',
@@ -85,7 +87,8 @@ class SystemController extends Controller
 
             DB::statement('PRAGMA foreign_keys = OFF;');
 
-            $protectedTables = ['users', 'settings', 'migrations', 'personal_access_tokens', 'sessions', 'cache', 'cache_locks', 'jobs', 'failed_jobs'];
+            $userTable = (new User)->getTable();
+            $protectedTables = [$userTable, 'settings', 'migrations', 'personal_access_tokens', 'sessions', 'cache', 'cache_locks', 'jobs', 'failed_jobs'];
             
             $allTables = DB::select("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'");
             
