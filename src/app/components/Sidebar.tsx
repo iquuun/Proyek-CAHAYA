@@ -67,9 +67,9 @@ export default function Sidebar() {
       <div className={`p-4 border-b border-white/10 shrink-0 flex items-center ${(isCollapsed && !isMobile) ? 'justify-center' : 'justify-between'}`}>
         {(!isCollapsed || isMobile) && (
           <div className="overflow-hidden">
-            <h1 className="text-base font-bold tracking-wide whitespace-nowrap">CAHAYA KOMPUTER</h1>
-            <p className="text-xs text-white/80 mt-0.5 whitespace-nowrap">{user?.name}</p>
-            <p className="text-[10px] uppercase tracking-wider text-white/50 whitespace-nowrap">{user?.role}</p>
+            <h1 className="text-sm xs:text-base font-black truncate text-sidebar-foreground">CAHAYA KOMPUTER</h1>
+            <p className="text-xs text-sidebar-foreground/80 mt-0.5 truncate">{user?.name}</p>
+            <p className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50 truncate">{user?.role}</p>
           </div>
         )}
         {isMobile ? (
@@ -82,7 +82,7 @@ export default function Sidebar() {
         ) : (
           <button 
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="p-1 hover:bg-white/20 rounded transition-colors text-white shrink-0"
+            className="p-1 hover:bg-sidebar-foreground/20 rounded transition-colors text-sidebar-foreground shrink-0"
             title={isCollapsed ? "Perbesar Menu" : "Perkecil Menu"}
           >
             {isCollapsed ? <Menu size={22} /> : <ChevronLeft size={22} />}
@@ -103,8 +103,8 @@ export default function Sidebar() {
               end={item.path === '/'}
               className={({ isActive }) =>
                 `flex items-center px-3 py-2 rounded-md mb-0.5 transition-all text-xs w-full ${isActive
-                  ? 'bg-white text-[#3B82F6] font-bold shadow-sm'
-                  : 'text-white/80 hover:bg-white/10 font-medium'
+                  ? 'bg-sidebar-foreground text-sidebar font-bold shadow-sm'
+                  : 'text-sidebar-foreground/80 hover:bg-sidebar-foreground/10 font-medium'
                 } ${(isCollapsed && !isMobile) ? 'justify-center gap-0' : 'gap-2.5'}`
               }
               title={(isCollapsed && !isMobile) ? item.label : undefined}
@@ -119,7 +119,7 @@ export default function Sidebar() {
       <div className="p-3 border-t border-white/10 shrink-0">
         <button
           onClick={() => setIsLogoutModalOpen(true)}
-          className={`flex items-center px-3 py-2 rounded-md w-full text-white/80 hover:bg-white/10 transition-all text-xs font-medium ${(isCollapsed && !isMobile) ? 'justify-center gap-0' : 'gap-2.5'}`}
+          className={`flex items-center px-3 py-2 rounded-md w-full text-sidebar-foreground/80 hover:bg-sidebar-foreground/10 transition-all text-xs font-medium ${(isCollapsed && !isMobile) ? 'justify-center gap-0' : 'gap-2.5'}`}
           title={(isCollapsed && !isMobile) ? "Keluar" : undefined}
         >
           <LogOut size={18} className="shrink-0" />
@@ -132,7 +132,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className={`hidden md:flex bg-[#3B82F6] text-white flex-col shrink-0 transition-all duration-300 ease-in-out print:hidden ${isCollapsed ? 'w-20' : 'w-56'}`}>
+      <div className={`hidden md:flex bg-sidebar text-sidebar-foreground flex-col shrink-0 transition-all duration-300 ease-in-out border-r border-sidebar-border print:hidden ${isCollapsed ? 'w-20' : 'w-56'}`}>
         {sidebarContent(false)}
       </div>
 
@@ -145,7 +145,7 @@ export default function Sidebar() {
       )}
 
       {/* Mobile Sidebar Drawer */}
-      <div className={`md:hidden fixed inset-y-0 left-0 z-50 w-64 bg-[#3B82F6] text-white flex flex-col transform transition-transform duration-300 ease-in-out print:hidden ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`md:hidden fixed inset-y-0 left-0 z-50 w-64 bg-sidebar text-sidebar-foreground flex flex-col transform transition-transform duration-300 ease-in-out border-r border-sidebar-border print:hidden ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         {sidebarContent(true)}
       </div>
 

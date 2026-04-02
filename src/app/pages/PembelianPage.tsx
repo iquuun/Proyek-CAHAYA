@@ -3,10 +3,11 @@ import { useAuth } from '../context/AuthContext';
 import PembelianTab from './PembelianTab';
 import DistributorPage from './DistributorPage';
 import HutangDistributorPage from './HutangDistributorPage';
-import { Package, Users, CreditCard } from 'lucide-react';
+import CatatanBelanjaTab from './CatatanBelanjaTab';
+import { Package, Users, CreditCard, FileText } from 'lucide-react';
 
 export default function PembelianPage() {
-    const [activeTab, setActiveTab] = useState<'pembelian' | 'distributor' | 'hutang'>('pembelian');
+    const [activeTab, setActiveTab] = useState<'pembelian' | 'distributor' | 'hutang' | 'catatan'>('pembelian');
     const { isOwner } = useAuth();
 
     return (
@@ -33,6 +34,16 @@ export default function PembelianPage() {
                     <Users size={16} />
                     Distributor
                 </button>
+                <button
+                    onClick={() => setActiveTab('catatan')}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-xs transition-colors ${activeTab === 'catatan'
+                            ? 'bg-[#3B82F6] text-white'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                >
+                    <FileText size={16} />
+                    Catatan Belanja
+                </button>
                 {isOwner && (
                     <button
                         onClick={() => setActiveTab('hutang')}
@@ -52,6 +63,7 @@ export default function PembelianPage() {
                 {activeTab === 'pembelian' && <PembelianTab />}
                 {activeTab === 'distributor' && <DistributorPage />}
                 {activeTab === 'hutang' && isOwner && <HutangDistributorPage />}
+                {activeTab === 'catatan' && <CatatanBelanjaTab />}
             </div>
         </div>
     );

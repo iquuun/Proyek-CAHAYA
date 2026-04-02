@@ -66,9 +66,21 @@ class SaleController extends Controller
                 ];
             }
 
-            // Gunakan nomor urut harian yang jauh lebih rapi dan pendek (contoh: INV-20260330-001)
-            $todayCount = Sale::whereDate('tanggal', date('Y-m-d'))->count() + 1;
-            $invoice = 'INV-' . date('Ymd') . '-' . str_pad($todayCount, 3, '0', STR_PAD_LEFT);
+            // Penomoran Faktur Berkelanjutan (Mulai dari Setting atau Faktur Terakhir)
+            $startNumberSetting = \Illuminate\Support\Facades\DB::table('settings')->where('key', 'invoice_start_number')->value('value');
+            $startNumber = $startNumberSetting ? (int)$startNumberSetting : 10000;
+            
+            $lastSale = Sale::orderBy('id', 'desc')->first();
+            $nextNumber = $startNumber;
+
+            if ($lastSale && preg_match('/^INV-(\d+)$/', $lastSale->invoice, $matches)) {
+                $lastNumber = (int)$matches[1];
+                if ($lastNumber >= $startNumber) {
+                    $nextNumber = $lastNumber + 1;
+                }
+            }
+
+            $invoice = 'INV-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
             $taxPercent = $validated['tax_percent'] ?? 0;
             $taxAmount = ($totalPenjualan * $taxPercent) / 100;
 

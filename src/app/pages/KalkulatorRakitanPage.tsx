@@ -1,281 +1,888 @@
-import { useState } from 'react';
-import { Monitor, Camera } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Monitor, ShoppingBag, Settings, Plus, Trash2, Camera, HelpCircle, Save, Percent, Receipt } from 'lucide-react';
+import api from '../api';
+import { toast } from 'sonner';
 
-interface Component {
-  id: string;
-  name: string;
-  price: number;
+interface Product {
+    id: number;
+    name: string;
+    harga_beli: number;
+    harga_jual: number;
+    category?: { name: string };
 }
 
-interface SelectedComponent {
-  category: string;
-  component: Component | null;
+interface CategoryConfig {
+    name: string;
+    adminPercent: number;
 }
 
-const mockComponents: Record<string, Component[]> = {
-  Processor: [
-    { id: 'cpu1', name: 'AMD Ryzen 5 5600X', price: 2500000 },
-    { id: 'cpu2', name: 'Intel Core i5-12400F', price: 2300000 },
-    { id: 'cpu3', name: 'AMD Ryzen 7 5800X', price: 3800000 },
-    { id: 'cpu4', name: 'Intel Core i7-12700F', price: 4200000 },
-  ],
-  VGA: [
-    { id: 'vga1', name: 'RTX 3060 Ti 8GB', price: 6500000 },
-    { id: 'vga2', name: 'RTX 3070 8GB', price: 8200000 },
-    { id: 'vga3', name: 'RX 6700 XT 12GB', price: 5800000 },
-    { id: 'vga4', name: 'RTX 4060 Ti 8GB', price: 7500000 },
-  ],
-  RAM: [
-    { id: 'ram1', name: 'Kingston Fury 16GB DDR4', price: 850000 },
-    { id: 'ram2', name: 'Corsair Vengeance 32GB DDR4', price: 1650000 },
-    { id: 'ram3', name: 'G.Skill Trident Z 16GB DDR4', price: 900000 },
-  ],
-  Storage: [
-    { id: 'ssd1', name: 'Samsung 970 EVO 1TB', price: 1600000 },
-    { id: 'ssd2', name: 'WD Black SN850 1TB', price: 2000000 },
-    { id: 'ssd3', name: 'Crucial P3 Plus 1TB', price: 1200000 },
-  ],
-  Motherboard: [
-    { id: 'mb1', name: 'MSI B550 Gaming Plus', price: 1750000 },
-    { id: 'mb2', name: 'ASUS ROG Strix B660-A', price: 2500000 },
-    { id: 'mb3', name: 'Gigabyte B550 Aorus Elite', price: 2200000 },
-  ],
-  PSU: [
-    { id: 'psu1', name: 'Corsair CV650 650W', price: 850000 },
-    { id: 'psu2', name: 'Seasonic Focus GX-750 750W', price: 1450000 },
-    { id: 'psu3', name: 'EVGA SuperNOVA 650W', price: 1200000 },
-  ],
-  Casing: [
-    { id: 'case1', name: 'NZXT H510 Flow', price: 1200000 },
-    { id: 'case2', name: 'Lian Li O11 Dynamic', price: 1800000 },
-    { id: 'case3', name: 'Fractal Design Meshify C', price: 1400000 },
-  ],
+interface FeeRule {
+    id: string;      
+    name: string;    
+    type: 'percent' | 'flat';
+    value: number;   
+    capRp: number;   
+}
+
+interface StoreConfig {
+    id: string;
+    name: string;
+    categories: CategoryConfig[];
+    feeRules: FeeRule[];
+}
+
+interface RakitanItem {
+    id: string;
+    kategori: string;
+    nama: string;
+    qty: number;
+    modal: number;
+}
+
+const DEFAULT_STORES: StoreConfig[] = [
+    {
+        id: "shopee_cahaya_id", name: "Shopee Cahaya Komputer ID", categories: [
+            { name: "Casing Komputer", adminPercent: 3.5 },
+            { name: "Prosesor", adminPercent: 3.5 },
+        ],
+        feeRules: [
+            { id: "s1_pemesanan", name: "Biaya Pemesanan Flat", type: 'flat', value: 1250, capRp: 0 },
+            { id: "s1_promo", name: "Promo Xtra", type: 'percent', value: 4.5, capRp: 60000 },
+            { id: "s1_ongkir", name: "Gratis Ongkir Xtra", type: 'percent', value: 1.5, capRp: 40000 },
+            { id: "s1_afiliasi", name: "Afiliator / PayLater", type: 'percent', value: 0, capRp: 0 }
+        ]
+    },
+    {
+        id: "lazada_id", name: "Lazada Store", categories: [
+            { name: "Komputer Desktop", adminPercent: 2.5 },
+        ],
+        feeRules: [
+            { id: "lz_pm", name: "Payment Fee", type: 'percent', value: 1.8, capRp: 0 },
+            { id: "lz_mb", name: "Max Bonus", type: 'percent', value: 2, capRp: 10000 },
+            { id: "lz_fs", name: "Free Shipping Max", type: 'percent', value: 3, capRp: 15000 }
+        ]
+    }
+];
+
+const SearchableSelect = ({ options, value, onChange, placeholder }: { options: {value: string, label: string}[], value: string, onChange: (v: string) => void, placeholder: string }) => {
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    
+    const selected = options.find(o => o.value === value);
+
+    return (
+        <div className="relative">
+            <div 
+                onClick={() => setOpen(!open)}
+                className="w-full text-xs px-2 py-2 border rounded-lg bg-white outline-none focus:ring-2 ring-blue-400 cursor-pointer flex justify-between items-center h-[34px]"
+            >
+                <span className="truncate text-gray-700 font-medium">{selected ? selected.label : placeholder}</span>
+                <span className="text-gray-400 text-[10px]">▼</span>
+            </div>
+            {open && (
+                <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-xl max-h-60 flex flex-col" style={{ minWidth: "15rem" }}>
+                    <div className="p-2 border-b bg-gray-50 rounded-t-lg">
+                        <input 
+                            autoFocus
+                            type="text" 
+                            className="w-full text-xs px-3 py-2 border border-blue-200 rounded outline-none focus:ring-2 ring-blue-400" 
+                            placeholder="Ketik untuk mencari..." 
+                            value={search} 
+                            onChange={e => setSearch(e.target.value)} 
+                        />
+                    </div>
+                    <div className="overflow-y-auto custom-scrollbar">
+                        <div onClick={() => { onChange(''); setOpen(false); }} className="px-3 py-2.5 text-xs hover:bg-gray-100 cursor-pointer text-gray-500 italic border-b">-- Kosongkan / Batal --</div>
+                        {options.filter(o => o.label.toLowerCase().includes(search.toLowerCase())).map(o => (
+                            <div 
+                                key={o.value} 
+                                onClick={() => { onChange(o.value); setOpen(false); setSearch(''); }}
+                                className={`px-3 py-2.5 text-xs hover:bg-blue-50 cursor-pointer border-b last:border-b-0 ${value === o.value ? 'bg-blue-100 font-bold text-blue-700' : 'text-gray-700'}`}
+                            >
+                                {o.label}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+            {open && <div className="fixed inset-0 z-40" onClick={() => setOpen(false)}></div>}
+        </div>
+    );
 };
 
-const categories = Object.keys(mockComponents);
+export default function KalkulatorPage() {
+    const [activeTab, setActiveTab] = useState<'rakitan' | 'satuan' | 'pengaturan'>('rakitan');
+    const [storeConfigs, setStoreConfigs] = useState<StoreConfig[]>(DEFAULT_STORES);
+    const [saving, setSaving] = useState(false);
 
-export default function KalkulatorRakitanPage() {
-  const [selectedComponents, setSelectedComponents] = useState<Record<string, Component | null>>(
-    categories.reduce((acc, cat) => ({ ...acc, [cat]: null }), {})
-  );
-  const [margin, setMargin] = useState(0);
-  const [promo, setPromo] = useState(0);
-  const [adminFee, setAdminFee] = useState(0);
-  const [otherCosts, setOtherCosts] = useState(0);
-  const [screenshotMode, setScreenshotMode] = useState(false);
+    // Form States
+    const [selectedStoreId, setSelectedStoreId] = useState<string>('');
+    const [selectedCategory, setSelectedCategory] = useState<string>('');
+    
+    // Active / Temp Config for specific session
+    const [activeAdminPercent, setActiveAdminPercent] = useState<number>(0);
+    const [activeFeeRules, setActiveFeeRules] = useState<FeeRule[]>([]);
 
-  const selectComponent = (category: string, component: Component) => {
-    setSelectedComponents({ ...selectedComponents, [category]: component });
-  };
+    // Satuan State
+    const [modalSatuan, setModalSatuan] = useState<number[]>([0]);
+    const [packingSatuan, setPackingSatuan] = useState<number>(1000);
+    const [marginSatuan, setMarginSatuan] = useState<number>(5000);
 
-  const totalModal = Object.values(selectedComponents).reduce(
-    (sum, comp) => sum + (comp?.price || 0),
-    0
-  ) + otherCosts;
+    // Rakitan State with LocalStorage mapping
+    const [rakitanItems, setRakitanItems] = useState<RakitanItem[]>(() => {
+        const saved = localStorage.getItem('kalkulator_rakitan_state');
+        if (saved) return JSON.parse(saved);
+        return [
+            { id: '1', kategori: 'PROSESOR', nama: '', qty: 1, modal: 0 },
+            { id: '2', kategori: 'MOTHERBOARD', nama: '', qty: 1, modal: 0 },
+            { id: '3', kategori: 'RAM', nama: '', qty: 1, modal: 0 },
+        ];
+    });
+    
+    // Satuan local storage
+    useEffect(() => {
+        const d = localStorage.getItem('kalkulator_satuan_state');
+        if (d) setModalSatuan(JSON.parse(d));
+    }, []);
+    useEffect(() => localStorage.setItem('kalkulator_satuan_state', JSON.stringify(modalSatuan)), [modalSatuan]);
 
-  const hargaOffline = totalModal + margin;
-  const hargaOnline = hargaOffline + adminFee - promo;
+    const [packingRakitan, setPackingRakitan] = useState<number>(() => Number(localStorage.getItem('kalkulator_packing')) || 25000);
+    const [marginRakitan, setMarginRakitan] = useState<number>(() => Number(localStorage.getItem('kalkulator_margin')) || 500000);
+    const [screenshotMode, setScreenshotMode] = useState(false);
+    const [confirmAction, setConfirmAction] = useState<{title: string, desc: string, onConfirm: () => void} | null>(null);
 
-  const hasSelection = Object.values(selectedComponents).some((comp) => comp !== null);
+    // Auto-save rakitan state
+    useEffect(() => localStorage.setItem('kalkulator_rakitan_state', JSON.stringify(rakitanItems)), [rakitanItems]);
+    useEffect(() => localStorage.setItem('kalkulator_packing', packingRakitan.toString()), [packingRakitan]);
+    useEffect(() => localStorage.setItem('kalkulator_margin', marginRakitan.toString()), [marginRakitan]);
 
-  return (
-    <div className={screenshotMode ? 'bg-white' : ''}>
-      <div className={`grid ${screenshotMode ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'} gap-4`}>
-        {/* Left Column - Form */}
-        {!screenshotMode && (
-          <div className="space-y-6">
-            {/* Component Selection */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-              <h3 className="text-base font-medium text-gray-800 mb-3">Pilih Komponen</h3>
-              <div className="space-y-4">
-                {categories.map((category) => (
-                  <div key={category}>
-                    <label className="block text-xs font-medium text-gray-700 mb-2">
-                      {category}
-                    </label>
+    const resetRakitan = () => {
+        setConfirmAction({
+            title: 'Kosongkan Komponen?',
+            desc: 'Anda yakin ingin mereset seluruh racikan barang dan meja hitung ke titik nol?',
+            onConfirm: () => {
+                setRakitanItems([
+                    { id: '1', kategori: 'PROSESOR', nama: '', qty: 1, modal: 0 },
+                    { id: '2', kategori: 'MOTHERBOARD', nama: '', qty: 1, modal: 0 },
+                ]);
+                setPackingRakitan(25000);
+                setMarginRakitan(500000);
+                toast.success("Daftar Rakitan dibersihkan.");
+            }
+        });
+    };
+    
+    // Products for Autocomplete
+    const [products, setProducts] = useState<Product[]>([]);
+
+    // Load Settings and Products on Mount
+    useEffect(() => {
+        api.get('/settings').then(res => {
+            if (res.data.ecommerce_calc_config) {
+                try {
+                    const parsed = JSON.parse(res.data.ecommerce_calc_config);
+                    if (parsed && Array.isArray(parsed)) {
+                        const verifiedStores = parsed.map(s => ({
+                            ...s,
+                            feeRules: s.feeRules || []
+                        }));
+                        setStoreConfigs(verifiedStores);
+                        if (verifiedStores.length > 0) setSelectedStoreId(verifiedStores[0].id);
+                    }
+                } catch (e) {
+                    console.error('Failed to parse calc settings');
+                    if (DEFAULT_STORES.length > 0) setSelectedStoreId(DEFAULT_STORES[0].id);
+                }
+            } else {
+                if (DEFAULT_STORES.length > 0) setSelectedStoreId(DEFAULT_STORES[0].id);
+            }
+        });
+        
+        api.get('/products').then(res => {
+            if (res.data && Array.isArray(res.data)) {
+                setProducts(res.data);
+            } else if (res.data && Array.isArray(res.data.data)) {
+                setProducts(res.data.data);
+            }
+        }).catch(err => console.error("Gagal load produk", err));
+    }, []);
+
+    const saveSettings = async () => {
+        try {
+            setSaving(true);
+            const formData = new FormData();
+            formData.append('ecommerce_calc_config', JSON.stringify(storeConfigs));
+            await api.post('/settings', formData);
+            toast.success('Pengaturan Toko & Persentase berhasil disimpan permanen!');
+        } catch (err) {
+            toast.error('Gagal menyimpan pengaturan');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // Auto load configs when store changes
+    useEffect(() => {
+        const store = storeConfigs.find(s => s.id === selectedStoreId);
+        if (store) {
+            // Load fee rules deep copy so editing locally doesn't mutate store instantly
+            setActiveFeeRules(JSON.parse(JSON.stringify(store.feeRules)));
+            const cat = store.categories.find(c => c.name === selectedCategory);
+            if (cat) setActiveAdminPercent(cat.adminPercent);
+        }
+    }, [selectedStoreId, storeConfigs]); // eslint-disable-line
+
+    // Auto update admin percent when category changes
+    useEffect(() => {
+        const store = storeConfigs.find(s => s.id === selectedStoreId);
+        if (store) {
+            const cat = store.categories.find(c => c.name === selectedCategory);
+            if (cat) setActiveAdminPercent(cat.adminPercent);
+        }
+    }, [selectedCategory]); // eslint-disable-line
+
+    // THE ENGINE
+    const hitungEcommerce = (totalModalComponent: number, packingFisik: number, targetMargin: number) => {
+        const targetBersih = totalModalComponent + packingFisik + targetMargin;
+        if (targetBersih <= 0) return { hargaJualOnline: 0, potonganLainnya: [], admin: 0, totalPotongan: 0, hargaOffline: 0 };
+
+        let sp = targetBersih;
+        let lastSp = 0;
+        let iters = 0;
+        
+        // Deep copy untuk iterasi perhitungan
+        let calculatedRules = JSON.parse(JSON.stringify(activeFeeRules)) as (FeeRule & { calculatedNominal: number })[];
+        let adminNominal = 0;
+
+        while (Math.abs(sp - lastSp) > 1 && iters < 100) {
+            lastSp = sp;
+            adminNominal = sp * (activeAdminPercent / 100);
+            
+            let totalLainnya = adminNominal;
+            
+            calculatedRules = calculatedRules.map(cr => {
+                let v = 0;
+                if (cr.type === 'percent') {
+                    v = sp * (cr.value / 100);
+                    if (cr.capRp > 0) v = Math.min(v, cr.capRp);
+                } else if (cr.type === 'flat') {
+                    v = cr.value;
+                }
+                totalLainnya += v;
+                return { ...cr, calculatedNominal: v };
+            });
+
+            sp = targetBersih + totalLainnya;
+            iters++;
+        }
+
+        const onlinePrice = Math.ceil(sp);
+
+        return {
+            hargaOffline: totalModalComponent + targetMargin, // Harga putus tanpa packing
+            hargaJualOnline: onlinePrice,
+            admin: adminNominal,
+            potonganLainnya: calculatedRules,
+            totalPotongan: sp - targetBersih
+        };
+    };
+
+    const renderConfigForm = () => (
+        <div className="bg-white border rounded-xl shadow-sm p-4 mb-5">
+            <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">Aturan Pemotongan E-commerce ({storeConfigs.find(s=>s.id===selectedStoreId)?.name || '...'})</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Pilih Toko</label>
                     <select
-                      value={selectedComponents[category]?.id || ''}
-                      onChange={(e) => {
-                        const component = mockComponents[category].find(
-                          (c) => c.id === e.target.value
-                        );
-                        if (component) selectComponent(category, component);
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent outline-none"
+                        value={selectedStoreId}
+                        onChange={(e) => {
+                            setSelectedStoreId(e.target.value);
+                            setSelectedCategory(''); // Reset cat
+                        }}
+                        className="w-full text-sm px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#3B82F6]"
                     >
-                      <option value="">-- Pilih {category} --</option>
-                      {mockComponents[category].map((comp) => (
-                        <option key={comp.id} value={comp.id}>
-                          {comp.name} - Rp {comp.price.toLocaleString('id-ID')}
-                        </option>
-                      ))}
+                        <option value="">-- Pilih Toko --</option>
+                        {storeConfigs.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Price Settings */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-              <h3 className="text-base font-medium text-gray-800 mb-3">Pengaturan Harga</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Margin (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    value={margin}
-                    onChange={(e) => setMargin(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent outline-none"
-                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Promo (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    value={promo}
-                    onChange={(e) => setPromo(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent outline-none"
-                  />
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">Kategori Barang</label>
+                    <select
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        className="w-full text-sm px-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#3B82F6]"
+                    >
+                        <option value="">-- Pilih Kategori --</option>
+                        {storeConfigs.find(s => s.id === selectedStoreId)?.categories.map(c => (
+                            <option key={c.name} value={c.name}>{c.name} ({c.adminPercent}%)</option>
+                        ))}
+                    </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Biaya Admin Marketplace (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    value={adminFee}
-                    onChange={(e) => setAdminFee(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent outline-none"
-                  />
+                    <label className="block text-xs font-semibold text-blue-700 mb-1">Admin Kategori (%)</label>
+                    <div className="relative">
+                        <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            value={activeAdminPercent}
+                            onChange={(e) => setActiveAdminPercent(Number(e.target.value))}
+                            className="w-full text-sm px-3 py-2 border border-blue-300 bg-blue-50 focus:bg-white rounded-lg focus:ring-2 focus:ring-[#3B82F6] font-bold"
+                        />
+                        <span className="absolute right-3 top-2.5 text-xs text-blue-600">%</span>
+                    </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-2">
-                    Biaya Lain (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    value={otherCosts}
-                    onChange={(e) => setOtherCosts(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#3B82F6] focus:border-transparent outline-none"
-                  />
-                </div>
-              </div>
             </div>
 
-            <button
-              onClick={() => setScreenshotMode(!screenshotMode)}
-              disabled={!hasSelection}
-              className="w-full flex items-center justify-center gap-2 bg-[#3B82F6] text-white py-2 rounded-lg font-medium hover:bg-[#2563EB] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-            >
-              <Camera size={16} />
-              {screenshotMode ? 'Tutup Mode Screenshot' : 'Mode Screenshot'}
-            </button>
-          </div>
-        )}
-
-        {/* Right Column - Preview */}
-        <div className={screenshotMode ? 'max-w-2xl mx-auto' : ''}>
-          <div className="bg-white rounded-lg border-2 border-gray-200 shadow-lg overflow-hidden">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-[#3B82F6] to-[#2563EB] p-4 text-white">
-              <div className="flex items-center gap-3 mb-2">
-                <Monitor size={16} />
-                <h2 className="text-xl font-semibold">CAHAYA KOMPUTER</h2>
-              </div>
-              <p className="text-xs text-white/90">Spesifikasi PC Rakitan</p>
-            </div>
-
-            {/* Specs List */}
-            <div className="p-4 space-y-3">
-              {!hasSelection ? (
-                <p className="text-center text-gray-500 py-5">
-                  Pilih komponen untuk membuat spesifikasi
-                </p>
-              ) : (
-                <>
-                  {categories.map((category) => {
-                    const component = selectedComponents[category];
-                    if (!component) return null;
-
-                    return (
-                      <div key={category} className="flex items-start gap-3 py-2 border-b border-gray-100">
-                        <span className="text-xs font-medium text-gray-600 min-w-[120px]">
-                          {category}:
-                        </span>
-                        <span className="text-xs text-gray-800 flex-1">{component.name}</span>
-                      </div>
-                    );
-                  })}
-                </>
-              )}
-            </div>
-
-            {/* Price Section */}
-            {hasSelection && (
-              <div className="p-4 space-y-4 bg-gray-50">
-                {/* Offline Price */}
-                <div className="bg-gradient-to-r from-green-50 to-green-100 p-3 rounded-lg border border-green-200">
-                  <p className="text-xs font-medium text-green-800 mb-1">Harga Offline</p>
-                  <p className="text-2xl font-bold text-green-700">
-                    Rp {hargaOffline.toLocaleString('id-ID')}
-                  </p>
+            {/* Dynamic Fee Inputs based on Store activeFeeRules */}
+            {activeFeeRules.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 bg-orange-50/80 border border-orange-100 p-3 rounded-lg mt-3">
+                    {activeFeeRules.map((rule, idx) => (
+                        <div key={rule.id} className="bg-white border border-orange-100 rounded p-2 shadow-sm flex flex-col justify-between">
+                            <label className="block text-[11px] font-bold text-gray-700 leading-tight mb-2 line-clamp-2" title={rule.name}>
+                                {rule.name}
+                            </label>
+                            
+                            <div className="space-y-1.5 mt-auto">
+                                <div className="relative flex items-center">
+                                    {rule.type === 'flat' && <span className="absolute left-2 text-[10px] text-gray-500 font-bold">Rp</span>}
+                                    <input 
+                                        type="number" 
+                                        min="0"
+                                        step={rule.type === 'percent' ? "0.1" : "100"} 
+                                        value={rule.value} 
+                                        onChange={(e) => {
+                                            const val = Math.max(0, Number(e.target.value));
+                                            const n = [...activeFeeRules];
+                                            n[idx].value = val;
+                                            setActiveFeeRules(n);
+                                        }} 
+                                        className={`w-full text-xs py-1.5 border border-gray-200 rounded focus:ring-1 ring-blue-400 outline-none ${rule.type === 'flat' ? 'pl-6 pr-2' : 'pl-2 pr-6'}`} 
+                                    />
+                                    {rule.type === 'percent' && <span className="absolute right-2 text-[10px] text-gray-500 font-bold">%</span>}
+                                </div>
+                                
+                                {rule.type === 'percent' && (
+                                    <div className="relative flex items-center bg-gray-50 rounded border border-gray-100">
+                                        <span className="absolute left-2 text-[9px] font-bold text-gray-400">MAX:</span>
+                                        <input 
+                                            type="number" 
+                                            min="0"
+                                            value={rule.capRp} 
+                                            onChange={(e) => {
+                                                const val = Math.max(0, Number(e.target.value));
+                                                const n = [...activeFeeRules];
+                                                n[idx].capRp = val;
+                                                setActiveFeeRules(n);
+                                            }} 
+                                            className="w-full text-[11px] pl-10 pr-2 py-1 bg-transparent outline-none focus:bg-white" 
+                                            placeholder="~"
+                                            title="Batas maksimal potongan (Rp). 0 = Tanpa batas"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    ))}
                 </div>
-
-                {/* Online Price */}
-                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-3 rounded-lg border border-blue-200">
-                  <p className="text-xs font-medium text-blue-800 mb-1">Harga Online</p>
-                  <p className="text-2xl font-bold text-[#3B82F6]">
-                    Rp {hargaOnline.toLocaleString('id-ID')}
-                  </p>
-                  {promo > 0 && (
-                    <p className="text-[11px] text-blue-600 mt-1">Sudah termasuk promo Rp {promo.toLocaleString('id-ID')}</p>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="text-center pt-4 border-t border-gray-200">
-                  <p className="text-[11px] text-gray-600">
-                    Total Modal: Rp {totalModal.toLocaleString('id-ID')}
-                  </p>
-                  {margin > 0 && (
-                    <p className="text-[11px] text-gray-600">
-                      Margin: Rp {margin.toLocaleString('id-ID')}
-                    </p>
-                  )}
-                </div>
-              </div>
             )}
-
-            {/* Footer */}
-            <div className="bg-[#3B82F6] p-3 text-center">
-              <p className="text-white text-xs font-medium">
-                Hubungi kami untuk info lebih lanjut
-              </p>
-              <p className="text-white/90 text-[11px] mt-1">
-                WA: 0812-3456-7890 | Instagram: @cahaya.komputer
-              </p>
-            </div>
-          </div>
-
-          {screenshotMode && (
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => setScreenshotMode(false)}
-                className="bg-gray-800 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-700 transition-colors"
-              >
-                Kembali ke Editor
-              </button>
-              <p className="text-xs text-gray-600 mt-3">
-                Screenshot preview di atas untuk dikirim ke customer
-              </p>
-            </div>
-          )}
+            
+            <p className="text-[10px] text-gray-500 mt-2 italic flex items-center gap-1"><HelpCircle size={12} /> Angka di atas dapat Anda modifikasi sementara untuk 1 tarikan perhitungan ini. Default akan otomatis sesuai toko.</p>
         </div>
-      </div>
-    </div>
-  );
+    );
+
+    const renderSatuan = () => {
+        const totalModal = modalSatuan.reduce((a, b) => a + Number(b), 0);
+        const result = hitungEcommerce(totalModal, packingSatuan, marginSatuan);
+
+        return (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-2">
+                <div>
+                    {renderConfigForm()}
+                    <div className="bg-white border rounded-xl shadow-sm p-4">
+                        <h3 className="font-bold text-gray-800 mb-4 border-b pb-2 flex justify-between items-center">
+                            Barang Fisik
+                            <button onClick={() => setModalSatuan([...modalSatuan, 0])} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200">+ Baris Barang</button>
+                        </h3>
+                        
+                        <div className="space-y-3 mb-4">
+                            {modalSatuan.map((mod, idx) => (
+                                <div key={idx} className="flex items-center gap-2">
+                                    <span className="text-xs font-medium w-32">Harga Modal {idx + 1}</span>
+                                    <div className="relative flex-1">
+                                        <span className="absolute left-3 top-2.5 text-xs text-gray-500">Rp</span>
+                                        <input 
+                                            type="number" 
+                                            min="0"
+                                            value={mod} 
+                                            onChange={(e) => {
+                                                const newMods = [...modalSatuan];
+                                                newMods[idx] = Math.max(0, Number(e.target.value));
+                                                setModalSatuan(newMods);
+                                            }}
+                                            className="w-full text-sm pl-8 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#3B82F6]" 
+                                        />
+                                    </div>
+                                    {modalSatuan.length > 1 && (
+                                        <button onClick={() => setModalSatuan(modalSatuan.filter((_, i) => i !== idx))} className="p-2 text-red-500 hover:bg-red-50 rounded-lg"><Trash2 size={16}/></button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 mb-1">Kemasan/Packing (Rp)</label>
+                                <input type="number" min="0" value={packingSatuan} onChange={(e) => setPackingSatuan(Math.max(0, Number(e.target.value)))} className="w-full text-sm px-3 py-2 border bg-gray-50 rounded-lg focus:ring-2 focus:ring-[#3B82F6]" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-emerald-700 mb-1">Target Margin Bersih (Rp)</label>
+                                <input type="number" min="0" value={marginSatuan} onChange={(e) => setMarginSatuan(Math.max(0, Number(e.target.value)))} className="w-full text-sm px-3 py-2 border border-emerald-300 bg-emerald-50 focus:bg-white rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div className="bg-white border rounded-xl shadow-lg overflow-hidden sticky top-4">
+                        <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-4 text-white text-center">
+                            <h2 className="text-lg font-bold">HASIL KALKULASI E-COMMERCE</h2>
+                            <p className="text-xs text-gray-300">Pendapatan Bersih / Target Kantong: Rp {marginSatuan.toLocaleString('id-ID')}</p>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-lg flex justify-between items-center">
+                                <div>
+                                    <p className="text-[11px] font-bold text-emerald-800 uppercase">JUMLAH HARGA PEMBELIAN OFFLINE</p>
+                                    <p className="text-[10px] text-emerald-600">(Modal + Target Margin. Tanpa Biaya Packing)</p>
+                                </div>
+                                <span className="text-xl font-bold text-emerald-700">Rp {result.hargaOffline.toLocaleString('id-ID')}</span>
+                            </div>
+
+                            <div className="border border-gray-100 rounded-lg p-3 space-y-2">
+                                <p className="text-xs font-bold text-gray-800 border-b pb-1 mb-2">Simulasi Potongan Marketplace:</p>
+                                <div className="flex justify-between text-xs"><span className="text-gray-500">Admin Kategori ({activeAdminPercent}%)</span><span className="text-gray-800">Rp {result.admin.toLocaleString('id-ID', {maximumFractionDigits:0})}</span></div>
+                                {result.potonganLainnya.map(rule => (
+                                    <div key={rule.id} className="flex justify-between text-[11px]">
+                                        <span className="text-gray-500">{rule.name} {rule.type === 'percent' ? `(${rule.value}%)` : `(Flat)`}</span>
+                                        <span className="text-gray-800">Rp {rule.calculatedNominal.toLocaleString('id-ID', {maximumFractionDigits:0})}</span>
+                                    </div>
+                                ))}
+                                <div className="flex justify-between text-xs font-bold pt-2 border-t mt-2"><span className="text-red-700">TOTAL POTONGAN ONLINE</span><span className="text-red-700">Rp {result.totalPotongan.toLocaleString('id-ID', {maximumFractionDigits:0})}</span></div>
+                            </div>
+
+                            <div className="bg-gradient-to-r from-blue-500 to-cyan-500 p-4 rounded-xl flex items-center justify-between shadow-inner text-white">
+                                <div>
+                                    <p className="text-xs font-bold text-blue-100 uppercase">JUMLAH HARGA ONLINE SHOP</p>
+                                    <p className="text-[10px] text-blue-200 leading-tight mt-1">Gunakan harga ini di E-Commerce agar margin Anda tidak tergerus pajak.</p>
+                                </div>
+                                <span className="text-2xl font-black drop-shadow-md">Rp {result.hargaJualOnline.toLocaleString('id-ID')}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const renderRakitan = () => {
+        const totalModalComponent = rakitanItems.reduce((a, b) => a + (b.qty * b.modal), 0);
+        const result = hitungEcommerce(totalModalComponent, packingRakitan, marginRakitan);
+        
+        // Extract unique categories from products
+        const dbCategories = Array.from(new Set(products.map(p => p.category?.name).filter(Boolean))).sort();
+
+        return (
+            <div className={`transition-all animate-in fade-in slide-in-from-bottom-2 ${screenshotMode ? 'w-full' : 'grid grid-cols-1 lg:grid-cols-2 gap-6'}`}>
+                
+                {/* Mode Developer (Layar Kiri) */}
+                {!screenshotMode && (
+                    <div className="space-y-4">
+                        {renderConfigForm()}
+                        
+                        <div className="bg-white border rounded-xl shadow-sm p-4">
+                            <h3 className="font-bold text-gray-800 mb-4 border-b pb-2 flex justify-between items-center">
+                                <span>Daftar Komponen Rakitan <span className="text-[10px] font-normal text-gray-400 italic ml-2">(Auto-saved)</span></span>
+                                <div className="flex gap-2">
+                                    <button onClick={resetRakitan} className="text-xs bg-red-50 text-red-600 px-3 py-1 rounded hover:bg-red-100 font-bold border border-red-200">Kosongkan</button>
+                                    <button onClick={() => setRakitanItems([...rakitanItems, { id: Date.now().toString(), kategori: 'TAMBAHAN', nama: '', qty: 1, modal: 0 }])} className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200 font-bold">+ Komponen</button>
+                                </div>
+                            </h3>
+                            
+                            <div className="space-y-3 mb-4">
+                                {rakitanItems.map((item, idx) => {
+                                    // Filter products for this item's chosen category
+                                    const availableProducts = products.filter(p => !item.kategori || item.kategori === 'CUSTOM' || p.category?.name?.toUpperCase() === item.kategori);
+
+                                    return (
+                                        <div key={item.id} className="flex flex-wrap md:flex-nowrap items-start gap-2 bg-gray-50 border p-3 rounded-xl relative group">
+                                            <div className="w-full md:w-[25%] space-y-1">
+                                                <label className="text-[10px] uppercase font-bold text-blue-600">Kategori</label>
+                                                <select 
+                                                    value={item.kategori} 
+                                                    onChange={(e) => { 
+                                                        const n = [...rakitanItems]; 
+                                                        n[idx].kategori = e.target.value; 
+                                                        // Reset nama if changing category
+                                                        if (e.target.value !== 'CUSTOM') n[idx].nama = '';
+                                                        setRakitanItems(n); 
+                                                    }} 
+                                                    className="w-full text-xs px-2 py-2 border rounded-lg bg-white outline-none focus:ring-2 ring-blue-400 font-semibold text-gray-700"
+                                                >
+                                                    <option value="">-- Pilih --</option>
+                                                    {dbCategories.map(c => <option key={c} value={c?.toUpperCase()}>{c?.toUpperCase()}</option>)}
+                                                    <option value="CUSTOM">-- KETIK MANUAL --</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="w-full md:w-[45%] space-y-1">
+                                                <label className="text-[10px] uppercase font-bold text-gray-500">Nama Barang</label>
+                                                {item.kategori === 'CUSTOM' ? (
+                                                    <input 
+                                                        type="text" 
+                                                        value={item.nama} 
+                                                        onChange={(e) => { const n = [...rakitanItems]; n[idx].nama = e.target.value; setRakitanItems(n); }} 
+                                                        className="w-full text-xs px-3 py-2 border rounded-lg bg-white outline-none focus:ring-2 ring-blue-400" 
+                                                        placeholder="Cth: Jasa Instalasi..." 
+                                                    />
+                                                ) : (
+                                                    <SearchableSelect 
+                                                        placeholder="-- Cari Produk --"
+                                                        value={item.nama}
+                                                        options={availableProducts.map(p => ({ value: p.name, label: p.name }))}
+                                                        onChange={(val) => {
+                                                            const n = [...rakitanItems]; 
+                                                            n[idx].nama = val; 
+                                                            
+                                                            const matchedProd = products.find(p => p.name === val);
+                                                            if (matchedProd) {
+                                                                n[idx].modal = Number(matchedProd.harga_beli) || 0;
+                                                            }
+                                                            setRakitanItems(n); 
+                                                        }}
+                                                    />
+                                                )}
+                                            </div>
+
+                                            <div className="w-1/3 md:w-[10%] space-y-1">
+                                                <label className="text-[10px] uppercase font-bold text-gray-500">Qty</label>
+                                                <input type="number" min="1" value={item.qty} onChange={(e) => { const n = [...rakitanItems]; n[idx].qty = Math.max(1, Number(e.target.value)); setRakitanItems(n); }} className="w-full text-xs px-2 py-2 border rounded-lg bg-white text-center outline-none focus:ring-2 ring-blue-400 font-bold" />
+                                            </div>
+
+                                            <div className="flex-1 space-y-1">
+                                                <label className="text-[10px] uppercase font-bold text-gray-500">Modal/Pcs</label>
+                                                <input type="number" min="0" value={item.modal} onChange={(e) => { const n = [...rakitanItems]; n[idx].modal = Math.max(0, Number(e.target.value)); setRakitanItems(n); }} className="w-full text-xs px-3 py-2 border rounded-lg bg-white outline-none focus:ring-2 ring-blue-400" />
+                                            </div>
+
+                                            <button onClick={() => setRakitanItems(rakitanItems.filter(r => r.id !== item.id))} className="absolute -right-2 -top-2 md:opacity-0 group-hover:opacity-100 transition p-1.5 bg-red-500 text-white rounded-full shadow-md hover:bg-red-600"><Trash2 size={14}/></button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1">Packing Kayu (Rp)</label>
+                                    <input type="number" min="0" value={packingRakitan} onChange={(e) => setPackingRakitan(Math.max(0, Number(e.target.value)))} className="w-full text-sm px-3 py-2 border bg-gray-50 rounded-lg focus:ring-2 focus:ring-[#3B82F6]" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-emerald-700 mb-1">Target Margin Bersih (Rp)</label>
+                                    <input type="number" min="0" value={marginRakitan} onChange={(e) => setMarginRakitan(Math.max(0, Number(e.target.value)))} className="w-full text-sm px-3 py-2 border border-emerald-300 bg-emerald-50 focus:bg-white rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold" />
+                                </div>
+                            </div>
+                            
+                            <button onClick={() => setScreenshotMode(true)} className="w-full mt-5 flex items-center justify-center gap-2 bg-gradient-to-r from-gray-800 to-gray-900 border-2 border-black text-white py-3 rounded-lg text-sm font-bold shadow-xl hover:from-black hover:to-gray-800 transition active:scale-[0.98]">
+                                <Camera size={18} /> KUNCI & BUKA MODE SCREENSHOT CUSTOMER
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Mode Screenshot Customer (Layar Kanan / Penuh) */}
+                <div className={`transition-all duration-300 ${screenshotMode ? 'max-w-2xl mx-auto' : ''}`}>
+                    <div className={`bg-white overflow-hidden ${screenshotMode ? 'rounded-lg shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-gray-200' : 'border rounded-xl shadow-lg'}`}>
+                        {screenshotMode && (
+                            <div className="bg-gray-100 print:hidden p-3 border-b flex justify-between items-center shadow-inner">
+                                <div className="text-xs font-bold text-gray-500 flex items-center gap-2"><Camera size={14}/> LAYAR SCREENSHOT AKTIF</div>
+                                <button onClick={() => setScreenshotMode(false)} className="bg-red-500 text-white px-4 py-1.5 rounded-lg shadow-md hover:bg-red-600 font-bold text-xs uppercase tracking-wide">Tutup Screenshot</button>
+                            </div>
+                        )}
+                        
+                        <div className="bg-white p-6 pb-6">
+                            <div className="text-center mb-6">
+                                <h2 className="text-xl md:text-2xl font-black text-gray-900 uppercase tracking-widest border-b-[3px] border-black pb-2 inline-block">KALKULATOR RAKITAN BARANG</h2>
+                                <p className="text-xs font-medium text-gray-500 mt-1">Spesifikasi Detail PC Anda</p>
+                            </div>
+                            
+                            {/* Simple 3 Column Table for Customer */}
+                            <table className="w-full text-left border-collapse font-sans">
+                                <thead>
+                                    <tr className="border-y-[3px] border-black bg-gray-50">
+                                        <th className="py-3 px-2 text-xs font-black uppercase text-gray-800 w-1/3">Kategori</th>
+                                        <th className="py-3 px-2 text-xs font-black uppercase text-gray-800">Nama Barang</th>
+                                        <th className="py-3 px-2 text-xs font-black uppercase text-gray-800 text-center w-16">QTY</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-dashed divide-gray-200">
+                                    {rakitanItems.map(item => (
+                                        <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
+                                            <td className="py-2.5 px-2 text-xs font-bold text-gray-600 uppercase">{item.kategori}</td>
+                                            <td className="py-2.5 px-2 text-sm font-medium text-gray-900">{item.nama}</td>
+                                            <td className="py-2.5 px-2 text-sm font-bold text-gray-900 text-center">{item.qty}x</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* Harga Final Banner */}
+                            <div className="mt-8 space-y-3">
+                                {/* Dotted divider */}
+                                <div className="border-t-[3px] border-dashed border-gray-200 mb-4"></div>
+
+                                <div className="flex items-center justify-between bg-emerald-50 border-2 border-emerald-500 rounded-xl p-4 shadow-sm overflow-hidden relative">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl transform translate-x-10 -translate-y-10"></div>
+                                    <div>
+                                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 block mb-1">Total Offline</span>
+                                        <span className="text-xs font-medium text-emerald-800/80">Pembelian Langsung di Toko</span>
+                                    </div>
+                                    <div className="text-right z-10">
+                                        <span className="text-2xl font-black text-emerald-600 tracking-tight">Rp {result.hargaOffline.toLocaleString('id-ID')}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between bg-orange-50 border-2 border-orange-500 rounded-xl p-4 shadow-sm overflow-hidden relative">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/10 rounded-full blur-2xl transform translate-x-10 -translate-y-10"></div>
+                                    <div>
+                                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 block mb-1">Total Online Shop</span>
+                                        <span className="text-xs font-medium text-orange-800/80">Via E-Commerce ({storeConfigs.find(s=>s.id===selectedStoreId)?.name || 'Shopee/Toped'})</span>
+                                    </div>
+                                    <div className="text-right z-10">
+                                        <span className="text-2xl font-black text-orange-600 tracking-tight">Rp {result.hargaJualOnline.toLocaleString('id-ID')}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const renderSettingToko = () => {
+        return (
+            <div className="bg-white border rounded-xl shadow-sm p-6 max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-2">
+                <div className="flex flex-col sm:flex-row items-center justify-between mb-6 pb-4 border-b gap-4">
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-800">Master Data Toko & Biaya</h2>
+                        <p className="text-sm text-gray-500">Buat aturan Promo/Ontkir yang dinamis menyesuaikan nama E-commerce.</p>
+                    </div>
+                    <button onClick={saveSettings} disabled={saving} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold transition shadow-lg shadow-blue-600/30 active:scale-95">
+                        <Save size={18}/> {saving ? 'Menyimpan...' : 'Simpan Semua Perubahan'}
+                    </button>
+                </div>
+
+                <div className="space-y-8">
+                    {storeConfigs.map((store, sIndex) => (
+                        <div key={store.id} className="border-2 border-gray-200 rounded-2xl p-5 bg-gray-50/30 overflow-hidden relative">
+                            {/* Decor */}
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl transform translate-x-10 -translate-y-10"></div>
+                            
+                            <div className="flex justify-between items-center mb-5 relative z-10">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><StoreIcon /></div>
+                                    <input 
+                                        type="text" 
+                                        value={store.name} 
+                                        onChange={(e) => {
+                                            const newly = [...storeConfigs];
+                                            newly[sIndex].name = e.target.value;
+                                            setStoreConfigs(newly);
+                                        }} 
+                                        className="font-black text-xl lg:text-2xl bg-transparent border-b-2 border-dashed border-gray-300 hover:border-blue-500 focus:border-blue-500 focus:outline-none px-1 py-1 min-w-[250px] lg:min-w-[400px] transition-colors"
+                                        placeholder="Nama Toko Cth: Shopee ID"
+                                    />
+                                </div>
+                                <button onClick={() => {
+                                    setConfirmAction({
+                                        title: 'Hapus Etalase Toko?',
+                                        desc: `Secara permanen akan menghapus toko "${store.name || 'yang dipilih'}" beserta semua pengaturan pajaknya.`,
+                                        onConfirm: () => {
+                                            setStoreConfigs(storeConfigs.filter((_, i) => i !== sIndex));
+                                            toast.success('Toko berhasil dihapus');
+                                        }
+                                    });
+                                }} className="text-red-500 hover:bg-red-100 p-2 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm border border-red-200 bg-white">
+                                    <Trash2 size={14}/> Hapus Toko
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative z-10">
+                                {/* Kategori % Setting */}
+                                <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                                    <h4 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2"><Percent size={14} className="text-blue-500"/> Persentase Kategori</h4>
+                                    <div className="space-y-2">
+                                        {store.categories.map((cat, cIndex) => (
+                                            <div key={cIndex} className="flex items-center gap-2 group">
+                                                <input 
+                                                    type="text" 
+                                                    value={cat.name} 
+                                                    onChange={(e) => {
+                                                        const newly = [...storeConfigs];
+                                                        newly[sIndex].categories[cIndex].name = e.target.value;
+                                                        setStoreConfigs(newly);
+                                                    }}
+                                                    className="flex-1 text-xs border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-full" 
+                                                    placeholder="Contoh: Monitor"
+                                                />
+                                                <div className="relative w-24">
+                                                    <input 
+                                                        type="number" 
+                                                        min="0"
+                                                        step="0.1"
+                                                        value={cat.adminPercent} 
+                                                        onChange={(e) => {
+                                                            const val = Math.max(0, Number(e.target.value));
+                                                            const newly = [...storeConfigs];
+                                                            newly[sIndex].categories[cIndex].adminPercent = val;
+                                                            setStoreConfigs(newly);
+                                                        }}
+                                                        className="w-full text-xs border border-gray-300 rounded-lg px-3 py-2 pr-6 focus:ring-2 focus:ring-blue-500 outline-none font-bold" 
+                                                    />
+                                                    <span className="absolute right-2 top-2 text-[10px] text-gray-500">%</span>
+                                                </div>
+                                                <button onClick={() => {
+                                                    const newly = [...storeConfigs];
+                                                    newly[sIndex].categories = newly[sIndex].categories.filter((_, i) => i !== cIndex);
+                                                    setStoreConfigs(newly);
+                                                }} className="text-gray-300 hover:text-red-500 p-1"><Trash2 size={16}/></button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button onClick={() => {
+                                        const newly = [...storeConfigs];
+                                        newly[sIndex].categories.push({ name: 'Baru', adminPercent: 0 });
+                                        setStoreConfigs(newly);
+                                    }} className="mt-3 w-full border border-dashed border-blue-300 text-blue-600 bg-blue-50 hover:bg-blue-100 py-1.5 rounded-lg text-xs font-bold transition">
+                                        + Tambah Kategori
+                                    </button>
+                                </div>
+
+                                {/* Dynamic Fee Rules */}
+                                <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                                    <h4 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2"><Receipt size={14} className="text-orange-500"/> Aturan Ekstra E-Commerce</h4>
+                                    <div className="space-y-3">
+                                        {store.feeRules.map((r, rIndex) => (
+                                            <div key={rIndex} className="bg-orange-50/50 p-2.5 rounded-lg border border-orange-100/50 relative group">
+                                                <div className="flex gap-2 mb-2">
+                                                    <input type="text" value={r.name} onChange={(e) => {
+                                                        const newly = [...storeConfigs]; newly[sIndex].feeRules[rIndex].name = e.target.value; setStoreConfigs(newly);
+                                                    }} className="flex-1 text-xs font-bold bg-transparent border-b border-gray-300 focus:border-orange-500 outline-none pb-0.5" placeholder="Nama Biaya (Misal Promo Xtra)" />
+                                                    
+                                                    <select value={r.type} onChange={(e) => {
+                                                        const newly = [...storeConfigs]; newly[sIndex].feeRules[rIndex].type = e.target.value as 'percent'|'flat'; setStoreConfigs(newly);
+                                                    }} className="text-[10px] bg-white border rounded px-1 text-gray-600 outline-none">
+                                                        <option value="percent">Tipe (%)</option>
+                                                        <option value="flat">Tipe (Rp Flat)</option>
+                                                    </select>
+                                                </div>
+
+                                                <div className="flex gap-2">
+                                                    <div className="relative flex-1">
+                                                        {r.type === 'flat' && <span className="absolute left-2 top-1.5 text-[10px] text-gray-400">Rp</span>}
+                                                        <input type="number" min="0" step={r.type==='percent'?'0.1':'100'} value={r.value} onChange={(e) => {
+                                                            const val = Math.max(0, Number(e.target.value));
+                                                            const newly = [...storeConfigs]; newly[sIndex].feeRules[rIndex].value = val; setStoreConfigs(newly);
+                                                        }} className={`w-full text-xs py-1.5 border rounded-lg focus:ring-1 ring-orange-400 outline-none ${r.type === 'flat' ? 'pl-6 pr-2' : 'px-2'}`} placeholder="Nilai"/>
+                                                        {r.type === 'percent' && <span className="absolute right-2 top-1.5 text-[10px] text-gray-400">%</span>}
+                                                    </div>
+                                                    
+                                                    {r.type === 'percent' && (
+                                                        <div className="flex-1 flex items-center gap-1.5">
+                                                            <span className="text-[10px] font-bold text-gray-400 whitespace-nowrap">Max Rp:</span>
+                                                            <input type="number" min="0" value={r.capRp} onChange={(e) => {
+                                                                const val = Math.max(0, Number(e.target.value));
+                                                                const newly = [...storeConfigs]; newly[sIndex].feeRules[rIndex].capRp = val; setStoreConfigs(newly);
+                                                            }} className="w-full text-xs px-2 py-1.5 border rounded-lg focus:ring-1 ring-orange-400 outline-none" placeholder="0 = No Cap"/>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <button onClick={() => {
+                                                    const newly = [...storeConfigs]; newly[sIndex].feeRules = newly[sIndex].feeRules.filter((_, i) => i !== rIndex); setStoreConfigs(newly);
+                                                }} className="absolute -right-2 -top-2 opacity-0 group-hover:opacity-100 transition p-1.5 bg-red-500 text-white rounded-full shadow hover:bg-red-600"><Trash2 size={12}/></button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button onClick={() => {
+                                        const newly = [...storeConfigs];
+                                        newly[sIndex].feeRules.push({ id: `fr_${Date.now()}`, name: 'Aturan Baru', type: 'percent', value: 0, capRp: 0 });
+                                        setStoreConfigs(newly);
+                                    }} className="mt-3 w-full border border-dashed border-orange-300 text-orange-600 bg-orange-50 hover:bg-orange-100 py-1.5 rounded-lg text-xs font-bold transition">
+                                        + Tambah Aturan Extra
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="mt-8">
+                    <button onClick={() => setStoreConfigs([...storeConfigs, { id: `store_${Date.now()}`, name: 'Toko Baru', categories: [], feeRules: [] }])} className="w-full flex items-center justify-center gap-2 py-4 shadow-sm border-2 border-dashed border-blue-300 rounded-xl text-blue-600 hover:bg-blue-50 font-black tracking-wide transition active:scale-[0.99]">
+                        <Plus size={20} /> TAMBAH ETALASE TOKO BARU
+                    </button>
+                </div>
+            </div>
+        );
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-black text-gray-800 flex items-center gap-3">
+                        <Monitor className="text-[#3B82F6]" size={28} />
+                        Kalkulator Margin Aman
+                    </h1>
+                    <p className="text-sm text-gray-500 mt-1">Simulasi akurat harga jual online & mode screenshot rakitan.</p>
+                </div>
+                
+                <div className="flex bg-white shadow-sm border p-1 rounded-xl">
+                    <button onClick={() => setActiveTab('rakitan')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'rakitan' ? 'bg-[#3B82F6] text-white shadow' : 'text-gray-500 hover:bg-gray-50'}`}>
+                        <Monitor size={16} className="inline mr-2" /> Rakitan PC
+                    </button>
+                    <button onClick={() => setActiveTab('satuan')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'satuan' ? 'bg-[#3B82F6] text-white shadow' : 'text-gray-500 hover:bg-gray-50'}`}>
+                        <ShoppingBag size={16} className="inline mr-2" /> E-commerce
+                    </button>
+                    <button onClick={() => setActiveTab('pengaturan')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'pengaturan' ? 'bg-gray-800 text-white shadow' : 'text-gray-500 hover:bg-gray-50'}`}>
+                        <Settings size={16} className="inline mr-2" /> Profil Toko
+                    </button>
+                </div>
+            </div>
+
+            {activeTab === 'satuan' && renderSatuan()}
+            {activeTab === 'rakitan' && renderRakitan()}
+            {activeTab === 'pengaturan' && renderSettingToko()}
+
+            {confirmAction && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm animate-in fade-in transition-all">
+                    <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm animate-in zoom-in-95 duration-200">
+                        <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-5 shadow-inner">
+                           <Trash2 className="text-red-600" size={28} />
+                        </div>
+                        <h3 className="text-xl font-black text-center text-gray-900 mb-2">{confirmAction.title}</h3>
+                        <p className="text-sm text-center text-gray-500 mb-8 leading-relaxed px-2">{confirmAction.desc}</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setConfirmAction(null)} className="flex-1 py-3 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition active:scale-95">Batal</button>
+                            <button onClick={() => {
+                                confirmAction.onConfirm();
+                                setConfirmAction(null);
+                            }} className="flex-1 py-3 rounded-xl font-bold text-white bg-red-600 hover:bg-red-700 shadow-md shadow-red-500/20 transition active:scale-95">Ya, Eksekusi</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
+
+const StoreIcon = () => (
+    <svg xmlns="http://www.w3.org/polymorphism" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+);

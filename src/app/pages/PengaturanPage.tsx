@@ -8,6 +8,7 @@ export default function PengaturanPage() {
     const [storeAddress, setStoreAddress] = useState('');
     const [storePhone, setStorePhone] = useState('');
     const [storeNotes, setStoreNotes] = useState('');
+    const [invoiceStartNumber, setInvoiceStartNumber] = useState('10000');
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [logoFile, setLogoFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(true);
@@ -82,6 +83,7 @@ export default function PengaturanPage() {
             setStoreAddress(res.data.store_address || '');
             setStorePhone(res.data.store_phone || '');
             setStoreNotes(res.data.store_notes || '');
+            setInvoiceStartNumber(res.data.invoice_start_number || '10000');
             if (res.data.store_logo) {
                 setLogoPreview(`${api.defaults.baseURL?.replace('/api', '')}/storage/${res.data.store_logo}`);
             }
@@ -108,6 +110,7 @@ export default function PengaturanPage() {
             formData.append('store_address', storeAddress);
             formData.append('store_phone', storePhone);
             formData.append('store_notes', storeNotes);
+            formData.append('invoice_start_number', invoiceStartNumber);
             if (logoFile) {
                 formData.append('store_logo', logoFile);
             }
@@ -277,6 +280,22 @@ export default function PengaturanPage() {
                                 placeholder="08xxxx..."
                                 className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none transition-all"
                             />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-xs font-medium text-gray-700">
+                                Mulai Nomor Faktur
+                            </label>
+                            <input
+                                type="number"
+                                value={invoiceStartNumber}
+                                onChange={(e) => setInvoiceStartNumber(e.target.value)}
+                                placeholder="Contoh: 10000"
+                                className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none transition-all"
+                            />
+                            <p className="text-[10px] text-gray-400 leading-tight">
+                                Faktur selanjutnya akan dimulai dari angka ini (misal: INV-10000) dan terus berlanjut tanpa reset harian.
+                            </p>
                         </div>
 
                         <div className="space-y-2">
