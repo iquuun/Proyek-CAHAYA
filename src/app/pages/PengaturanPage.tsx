@@ -19,6 +19,8 @@ export default function PengaturanPage() {
 
     // DANGER ZONE states
     const [showResetModal, setShowResetModal] = useState(false);
+    const [showRestoreModal, setShowRestoreModal] = useState(false);
+    const [pendingRestoreFile, setPendingRestoreFile] = useState<File | null>(null);
     const [resetConfirmText, setResetConfirmText] = useState('');
     const [resetCountdown, setResetCountdown] = useState(0);
     const [resetting, setResetting] = useState(false);
@@ -85,7 +87,10 @@ export default function PengaturanPage() {
             setStoreNotes(res.data.store_notes || '');
             setInvoiceStartNumber(res.data.invoice_start_number || '10000');
             if (res.data.store_logo) {
-                setLogoPreview(`${api.defaults.baseURL?.replace('/api', '')}/storage/${res.data.store_logo}`);
+                const base = api.defaults.baseURL?.endsWith('/api') 
+                    ? api.defaults.baseURL.slice(0, -4) 
+                    : api.defaults.baseURL?.replace(/\/api$/, '');
+                setLogoPreview(`${base}/storage/${res.data.store_logo}?t=${Date.now()}`);
             }
         } catch (err) {
             console.error('Failed to fetch settings', err);
@@ -119,6 +124,7 @@ export default function PengaturanPage() {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             toast.success('Pengaturan berhasil disimpan!');
+            fetchSettings(); // Refresh to get the new logo path or confirm save
         } catch (err) {
             toast.error('Gagal menyimpan pengaturan');
         } finally {
@@ -126,40 +132,51 @@ export default function PengaturanPage() {
         }
     };
 
-    const handleRestoreBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        if (!file.name.endsWith('.sqlite') && !file.name.endsWith('.db')) {
+        console.log("File selected:", file.name);
+
+        const fileName = file.name.toLowerCase();
+        if (!fileName.endsWith('.sqlite') && !fileName.endsWith('.db')) {
             toast.error('Format tidak didukung. Harap upload file .sqlite atau .db');
             if (backupInputRef.current) backupInputRef.current.value = '';
             return;
         }
 
-        if (!confirm('PERINGATAN! Mengunggah backup ini akan menimpa SEMUA DATA SAAT INI dengan data dari file backup. Pastikan ini adalah file backup yang benar! Apakah Anda yakin ingin melanjutkan?')) {
-            if (backupInputRef.current) backupInputRef.current.value = '';
-            return;
-        }
+        setPendingRestoreFile(file);
+        setShowRestoreModal(true);
+        
+        // Reset input immediately so same file can be re-selected if needed
+        if (e.target) e.target.value = '';
+    };
+
+    const confirmRestoreBackup = async () => {
+        if (!pendingRestoreFile) return;
 
         try {
+            console.log("Starting restore process...");
+            setShowRestoreModal(false);
             setUploadingBackup(true);
             const formData = new FormData();
-            formData.append('backup_file', file);
+            formData.append('backup_file', pendingRestoreFile);
 
-            await api.post('/settings/restore', formData, {
+            const res = await api.post('/settings/restore', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
+            console.log("Restore response:", res.data);
             toast.success('Database berhasil dipulihkan! Halaman akan dimuat ulang...');
             setTimeout(() => {
                 window.location.reload();
             }, 1500);
         } catch (err: any) {
-            console.error(err);
+            console.error("Restore error:", err);
             toast.error(err.response?.data?.message || 'Gagal memulihkan database. Pastikan file valid.');
         } finally {
             setUploadingBackup(false);
-            if (backupInputRef.current) backupInputRef.current.value = '';
+            setPendingRestoreFile(null);
         }
     };
 
@@ -351,21 +368,19 @@ export default function PengaturanPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <input 
-                            type="file" 
-                            accept=".sqlite,.db" 
-                            ref={backupInputRef}
-                            style={{ display: 'none' }}
-                            onChange={handleRestoreBackup}
-                        />
-                        <button
-                            onClick={() => backupInputRef.current?.click()}
-                            disabled={uploadingBackup || downloading}
-                            className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg font-bold shadow-lg shadow-amber-600/20 hover:bg-amber-700 disabled:opacity-75 disabled:cursor-wait transition-all active:scale-95 text-sm"
+                        <label
+                            className={`flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg font-bold shadow-lg shadow-amber-600/20 hover:bg-amber-700 transition-all active:scale-95 text-sm cursor-pointer ${uploadingBackup || downloading ? 'opacity-75 cursor-wait' : ''}`}
                         >
+                            <input 
+                                type="file" 
+                                accept=".sqlite,.db" 
+                                style={{ display: 'none' }}
+                                onChange={handleFileSelection}
+                                disabled={uploadingBackup || downloading}
+                            />
                             <UploadCloud size={16} />
                             {uploadingBackup ? 'Memulihkan...' : 'Upload Backup (.sqlite)'}
-                        </button>
+                        </label>
                         <button
                             onClick={handleBackup}
                             disabled={downloading || uploadingBackup}
@@ -509,6 +524,59 @@ export default function PengaturanPage() {
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* ============================== */}
+            {/* RESTORE CONFIRMATION MODAL */}
+            {/* ============================== */}
+            {showRestoreModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="bg-amber-600 px-6 py-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-white/20 rounded-lg">
+                                    <Database size={20} className="text-white" />
+                                </div>
+                                <h3 className="text-base font-bold text-white">Konfirmasi Pemulihan</h3>
+                            </div>
+                            <button onClick={() => { setShowRestoreModal(false); setPendingRestoreFile(null); }} className="text-white/70 hover:text-white transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-5 text-center">
+                                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <AlertTriangle className="text-red-600" size={24} />
+                                </div>
+                                <h4 className="text-sm font-bold text-red-800 mb-1">PERINGATAN KRITIS!</h4>
+                                <p className="text-[11px] text-red-600 leading-relaxed uppercase font-black">
+                                    SELURUH DATA SAAT INI AKAN DIHAPUS DAN DIGANTIKAN OLEH DATA DARI FILE BACKUP BERIKUT:
+                                </p>
+                            </div>
+
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-6">
+                                <p className="text-[10px] text-gray-400 uppercase font-bold mb-1">File Terpilih:</p>
+                                <p className="text-xs font-mono text-gray-700 bg-white px-2 py-1.5 border border-gray-100 rounded truncate">
+                                    {pendingRestoreFile?.name}
+                                </p>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => { setShowRestoreModal(false); setPendingRestoreFile(null); }}
+                                    className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-200 transition-all active:scale-95"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    onClick={confirmRestoreBackup}
+                                    className="flex-1 py-2.5 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700 transition-all active:scale-95 shadow-lg shadow-red-600/30"
+                                >
+                                    Ya, Pulihkan Sekarang
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

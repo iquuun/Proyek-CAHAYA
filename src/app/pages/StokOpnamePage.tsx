@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ClipboardList, Save, Search, ChevronLeft, ChevronRight, FileSpreadsheet } from 'lucide-react';
+import { ClipboardList, Save, Search, ChevronLeft, ChevronRight, FileSpreadsheet, SortDesc, EyeOff, Eye } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 import api from '../api';
@@ -18,6 +18,8 @@ export default function StokOpnamePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [keterangan, setKeterangan] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sortByStock, setSortByStock] = useState(true);
+  const [showOnlyWithStock, setShowOnlyWithStock] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -49,7 +51,7 @@ export default function StokOpnamePage() {
   const updateStokFisik = (productId: number, value: string) => {
     const numericValue = value === '' ? '' : parseInt(value) || 0;
     setOpnameItems(
-      opnameItems.map((item) =>
+      opnameItems.map((item: OpnameItem) =>
         item.product_id === productId
           ? { 
               ...item, 
@@ -61,8 +63,8 @@ export default function StokOpnamePage() {
     );
   };
 
-  const totalSelisih = opnameItems.reduce((sum, item) => sum + Math.abs(item.selisih), 0);
-  const itemsWithDiff = opnameItems.filter((item) => item.selisih !== 0);
+  const totalSelisih = opnameItems.reduce((sum: number, item: OpnameItem) => sum + Math.abs(item.selisih), 0);
+  const itemsWithDiff = opnameItems.filter((item: OpnameItem) => item.selisih !== 0);
 
   const handleSave = async () => {
     if (itemsWithDiff.length === 0) {
@@ -75,7 +77,7 @@ export default function StokOpnamePage() {
       const payload = {
         tanggal: new Date().toISOString().split('T')[0],
         keterangan: keterangan || 'Penyesuaian stok opname',
-        items: itemsWithDiff.map(i => ({
+        items: itemsWithDiff.map((i: OpnameItem) => ({
           product_id: i.product_id,
           stok_sistem: i.stok_sistem,
           stok_fisik: i.stok_fisik as number,
@@ -95,10 +97,34 @@ export default function StokOpnamePage() {
   };
 
   const filteredItems = useMemo(() => {
-    return opnameItems.filter((item) =>
-      item.product_name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [opnameItems, searchTerm]);
+    let result = [...opnameItems];
+
+    // Search filter
+    if (searchTerm) {
+      result = result.filter((item) =>
+        item.product_name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Stock availability filter
+    if (showOnlyWithStock) {
+      result = result.filter((item) => item.stok_sistem > 0);
+    }
+
+    // Sorting logic
+    result.sort((a, b) => {
+      if (sortByStock) {
+        // Sort by current stock system (descending)
+        if (b.stok_sistem !== a.stok_sistem) {
+          return b.stok_sistem - a.stok_sistem;
+        }
+      }
+      // Then by name (ascending)
+      return a.product_name.localeCompare(b.product_name);
+    });
+
+    return result;
+  }, [opnameItems, searchTerm, sortByStock, showOnlyWithStock]);
 
   // Reset pagination when search changes
   useEffect(() => {
@@ -219,17 +245,41 @@ export default function StokOpnamePage() {
           </div>
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">
-              Cari Produk
+              Cari & Filter
             </label>
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-              <input
-                type="text"
-                placeholder="Cari..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs bg-gray-50"
-              />
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                <input
+                  type="text"
+                  placeholder="Cari produk..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs bg-gray-50"
+                />
+              </div>
+              <button
+                onClick={() => setSortByStock(!sortByStock)}
+                title={sortByStock ? "Matikan Urut Stok" : "Urutkan Stok Terbanyak"}
+                className={`p-2 rounded-lg border transition-all ${
+                  sortByStock 
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-600/20' 
+                    : 'bg-white text-gray-400 border-gray-200 hover:border-blue-400 hover:text-blue-500'
+                }`}
+              >
+                <SortDesc size={16} />
+              </button>
+              <button
+                onClick={() => setShowOnlyWithStock(!showOnlyWithStock)}
+                title={showOnlyWithStock ? "Tampilkan Semua" : "Sembunyikan Stok 0"}
+                className={`p-2 rounded-lg border transition-all ${
+                  showOnlyWithStock 
+                    ? 'bg-orange-600 text-white border-orange-600 shadow-md shadow-orange-600/20' 
+                    : 'bg-white text-gray-400 border-gray-200 hover:border-orange-400 hover:text-orange-500'
+                }`}
+              >
+                {showOnlyWithStock ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
         </div>
@@ -246,7 +296,7 @@ export default function StokOpnamePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {currentItems.map((item) => (
+              {currentItems.map((item: OpnameItem) => (
                 <tr key={item.product_id} className={`transition-colors border-b border-gray-50 last:border-0 ${item.selisih !== 0 ? 'bg-orange-50/30' : 'hover:bg-blue-50/50'}`}>
                   <td className="px-3 py-2 text-xs">
                     <p className="font-bold text-xs text-gray-800">{item.product_name}</p>
@@ -291,7 +341,7 @@ export default function StokOpnamePage() {
           </p>
           <div className="flex items-center gap-1">
             <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))}
               disabled={currentPage <= 1}
               className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
@@ -318,7 +368,7 @@ export default function StokOpnamePage() {
               ))
             }
             <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              onClick={() => setCurrentPage((p: number) => Math.min(totalPages, p + 1))}
               disabled={currentPage >= totalPages}
               className="p-1 rounded hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >

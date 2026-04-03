@@ -70,14 +70,20 @@ class SettingController extends Controller
         }
 
         try {
+            // Disconnect to release any locks from current process (important for Windows)
+            DB::disconnect();
+            
+            // On Windows, move/rename might fail if another process (like a queue worker) 
+            // has the file open. We try to move it.
             $file->move(database_path(), 'database.sqlite');
+            
             return response()->json(['message' => 'Database berhasil dipulihkan dari backup.']);
         } catch (\Exception $e) {
             // Restore previous backup if failed
             if (file_exists(database_path('database_temp_backup.sqlite'))) {
                 copy(database_path('database_temp_backup.sqlite'), $dbPath);
             }
-            return response()->json(['message' => 'Terjadi kesalahan saat mengembalikan database: ' . $e->getMessage()], 500);
+            return response()->json(['message' => 'Gagal memulihkan database (file mungkin sedang dikunci sistem). Silakan coba lagi atau restart server. Detail: ' . $e->getMessage()], 500);
         }
     }
 }

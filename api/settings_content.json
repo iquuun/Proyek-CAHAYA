@@ -1,0 +1,58 @@
+[
+    {
+        "id": 1,
+        "key": "store_name",
+        "value": "CAHAYA KOMPUTER ID",
+        "created_at": null,
+        "updated_at": null
+    },
+    {
+        "id": 2,
+        "key": "store_address",
+        "value": "Jl. Desa No 24B Babakan Sari Kiaracondong, Kota Bandung",
+        "created_at": null,
+        "updated_at": null
+    },
+    {
+        "id": 3,
+        "key": "store_logo",
+        "value": "logos\/jGdVf64bsAGLtqA4XH5c35PRkhvV6y3daBNhWTPy.png",
+        "created_at": null,
+        "updated_at": null
+    },
+    {
+        "id": 4,
+        "key": "store_phone",
+        "value": "+62 896-5569-3329",
+        "created_at": null,
+        "updated_at": null
+    },
+    {
+        "id": 5,
+        "key": "store_notes",
+        "value": "No Req : 4372489433 a\/n SYAHRUL SIDIK\r\nTerima kasih atas kepercayaan anda,\r\nMohon Simpan Faktur ini sebagai bukti transaksi.",
+        "created_at": null,
+        "updated_at": null
+    },
+    {
+        "id": 6,
+        "key": "invoice_start_number",
+        "value": "03000",
+        "created_at": null,
+        "updated_at": null
+    },
+    {
+        "id": 7,
+        "key": "ecommerce_calc_config",
+        "value": "[{\"id\":\"shopee_cahaya_id\",\"name\":\"Shopee Cahaya Komputer ID\",\"categories\":[{\"name\":\"Casing Komputer\",\"adminPercent\":3.5},{\"name\":\"Prosesor\",\"adminPercent\":3.5}],\"feeRules\":[{\"id\":\"s1_pemesanan\",\"name\":\"Biaya Pemesanan Flat\",\"type\":\"flat\",\"value\":0,\"capRp\":0},{\"id\":\"s1_promo\",\"name\":\"Promo Xtra\",\"type\":\"percent\",\"value\":4.5,\"capRp\":60000},{\"id\":\"s1_ongkir\",\"name\":\"Gratis Ongkir Xtra\",\"type\":\"percent\",\"value\":1.5,\"capRp\":40000},{\"id\":\"s1_afiliasi\",\"name\":\"Afiliator \/ PayLater\",\"type\":\"percent\",\"value\":0,\"capRp\":0}]},{\"id\":\"lazada_id\",\"name\":\"Lazada Store\",\"categories\":[{\"name\":\"Komputer Desktop\",\"adminPercent\":2.5}],\"feeRules\":[{\"id\":\"lz_pm\",\"name\":\"Payment Fee\",\"type\":\"percent\",\"value\":1.8,\"capRp\":0},{\"id\":\"lz_mb\",\"name\":\"Max Bonus\",\"type\":\"percent\",\"value\":2,\"capRp\":10000},{\"id\":\"lz_fs\",\"name\":\"Free Shipping Max\",\"type\":\"percent\",\"value\":3,\"capRp\":15000}]}]",
+        "created_at": null,
+        "updated_at": null
+    },
+    {
+        "id": 8,
+        "key": "catatan_belanja",
+        "value": null,
+        "created_at": null,
+        "updated_at": null
+    }
+]

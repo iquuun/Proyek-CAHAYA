@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Eye, CheckCircle, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Eye, CheckCircle, Download, Search, ChevronLeft, ChevronRight, Trash2, Calendar, Edit2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import Select from 'react-select';
 import api from '../api';
@@ -44,6 +44,7 @@ export default function PembelianTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<'all' | 'lunas' | 'hutang'>('all');
+  const [filterMonth, setFilterMonth] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -57,6 +58,9 @@ export default function PembelianTab() {
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [selectedDetailPurchase, setSelectedDetailPurchase] = useState<Purchase | null>(null);
   const [payAmount, setPayAmount] = useState('');
+  
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
 
   interface FormDataState {
     invoice: string;
@@ -92,7 +96,7 @@ export default function PembelianTab() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filter]);
+  }, [searchQuery, filter, filterMonth]);
 
   const fetchData = async () => {
     try {
@@ -115,14 +119,15 @@ export default function PembelianTab() {
   const filteredPurchases = useMemo(() => {
     return purchases.filter((p) => {
       const matchesFilter = filter === 'all' || p.status_pembayaran === filter;
+      const matchesMonth = filterMonth === '' || p.tanggal.startsWith(filterMonth);
       const searchLower = searchQuery.toLowerCase();
       const matchesSearch = 
         p.invoice?.toLowerCase().includes(searchLower) ||
         p.distributor?.name.toLowerCase().includes(searchLower);
       
-      return matchesFilter && matchesSearch;
+      return matchesFilter && matchesMonth && matchesSearch;
     });
-  }, [purchases, filter, searchQuery]);
+  }, [purchases, filter, filterMonth, searchQuery]);
 
   const totalPages = Math.ceil(filteredPurchases.length / itemsPerPage) || 1;
   const currentItems = useMemo(() => {
@@ -131,6 +136,8 @@ export default function PembelianTab() {
   }, [filteredPurchases, currentPage, itemsPerPage]);
 
   const handleOpenModal = () => {
+    setIsEditMode(false);
+    setEditId(null);
     setFormData({
       invoice: '',
       distributor_id: distributors.length > 0 ? distributors[0].id.toString() : '',
@@ -168,7 +175,15 @@ export default function PembelianTab() {
           harga_beli: parseFloat(i.harga_beli),
         }))
       };
-      await api.post('/purchases', payload);
+
+      if (isEditMode && editId) {
+        await api.put(`/purchases/${editId}`, payload);
+        toast.success('Pembelian berhasil diperbarui');
+      } else {
+        await api.post('/purchases', payload);
+        toast.success('Pembelian berhasil disimpan');
+      }
+      
       handleCloseModal();
       fetchData();
     } catch (err: any) {
@@ -207,6 +222,38 @@ export default function PembelianTab() {
   const handleOpenDetailModal = (purchase: Purchase) => {
     setSelectedDetailPurchase(purchase);
     setIsDetailModalOpen(true);
+  };
+
+  const handleEdit = (purchase: Purchase) => {
+    setIsEditMode(true);
+    setEditId(purchase.id);
+    setFormData({
+      invoice: purchase.invoice || '',
+      distributor_id: purchase.distributor_id.toString(),
+      tanggal: purchase.tanggal,
+      total_pembelian: purchase.total_pembelian.toString(),
+      terbayar: purchase.terbayar.toString(),
+      status_pembayaran: purchase.status_pembayaran,
+      jatuh_tempo: purchase.jatuh_tempo || '',
+      items: (purchase.items || []).map(item => ({
+        product_id: item.product_id.toString(),
+        qty: item.qty.toString(),
+        harga_beli: item.harga_beli.toString(),
+      })),
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (purchase: Purchase) => {
+    if (window.confirm(`Apakah Anda yakin ingin menghapus data pembelian ${purchase.invoice || ''}?`)) {
+      try {
+        await api.delete(`/purchases/${purchase.id}`);
+        toast.success('Pembelian berhasil dihapus');
+        fetchData();
+      } catch (err: any) {
+        toast.error(err.response?.data?.message || 'Gagal menghapus pembelian');
+      }
+    }
   };
 
   const calculateTotal = (items: typeof formData.items) => {
@@ -371,15 +418,28 @@ export default function PembelianTab() {
               Belum Lunas
             </button>
           </div>
-          <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-2 w-full sm:w-64 focus-within:ring-1 focus-within:ring-[#3B82F6] focus-within:border-[#3B82F6] transition-all">
-            <Search size={14} className="text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Cari invoice atau distributor..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-transparent border-none text-xs px-2 py-2 outline-none font-medium" 
-            />
+          
+          <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-2 w-full sm:w-auto focus-within:ring-1 focus-within:ring-[#3B82F6] focus-within:border-[#3B82F6] transition-all overflow-hidden">
+              <Calendar size={14} className="text-gray-400 shrink-0" />
+              <input 
+                type="month"
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(e.target.value)}
+                className="bg-transparent border-none text-xs px-2 py-2 outline-none font-medium text-gray-700 w-full cursor-pointer"
+              />
+            </div>
+            
+            <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-2 w-full sm:w-64 focus-within:ring-1 focus-within:ring-[#3B82F6] focus-within:border-[#3B82F6] transition-all">
+              <Search size={14} className="text-gray-400 shrink-0" />
+              <input 
+                type="text" 
+                placeholder="Cari invoice atau distributor..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-transparent border-none text-xs px-2 py-2 outline-none font-medium" 
+              />
+            </div>
           </div>
         </div>
         <button
@@ -465,11 +525,25 @@ export default function PembelianTab() {
                           </button>
                         )}
                         <button
+                          onClick={() => handleEdit(purchase)}
+                          title="Edit Pembelian"
+                          className="p-1.5 text-amber-600 hover:bg-amber-100 rounded-md transition-colors"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
                           onClick={() => handleOpenDetailModal(purchase)}
                           title="Lihat Detail Barang"
                           className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-md transition-colors"
                         >
                           <Eye size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(purchase)}
+                          title="Hapus Pembelian"
+                          className="p-1.5 text-red-600 hover:bg-red-100 rounded-md transition-colors"
+                        >
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>
@@ -529,7 +603,9 @@ export default function PembelianTab() {
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm modal-backdrop flex items-center justify-center p-3 z-50">
           <div className="bg-white rounded-2xl shadow-2xl ring-1 ring-white/50 modal-content w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
             <div className="p-4 border-b border-gray-100 shrink-0">
-              <h3 className="text-lg font-semibold text-gray-800">Tambah Pembelian</h3>
+              <h3 className="text-lg font-semibold text-gray-800">
+                {isEditMode ? 'Edit Pembelian' : 'Tambah Pembelian'}
+              </h3>
             </div>
             <div className="p-4 overflow-y-auto flex-1">
               <form id="purchaseForm" onSubmit={handleSubmit} className="space-y-4">

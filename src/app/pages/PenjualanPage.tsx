@@ -406,7 +406,7 @@ export default function PenjualanPage() {
     } else if (payment === '0') {
       setPayment(val);
     } else {
-      setPayment(prev => prev + val);
+      setPayment((prev: string) => prev + val);
     }
   };
 
@@ -574,6 +574,7 @@ export default function PenjualanPage() {
                       <table className="w-full text-left border-collapse">
                         <thead className="sticky top-0 bg-white z-10 border-b border-gray-100">
                           <tr>
+                            <th className="py-2 px-1.5 text-[11px] font-bold text-gray-500 uppercase text-center w-8">No.</th>
                             <th className="py-2 px-1.5 text-[11px] font-bold text-gray-500 uppercase">Produk</th>
                             <th className="py-2 px-1.5 text-[11px] font-bold text-gray-500 uppercase text-center">Qty</th>
                             <th className="py-2 px-1.5 text-[11px] font-bold text-gray-500 uppercase text-right">Harga</th>
@@ -598,6 +599,9 @@ export default function PenjualanPage() {
                                   ${isTargetBlock(idx) ? 'bg-blue-100/70 border-y-2 border-blue-400' : ''}
                                 `}
                               >
+                                <td className="py-2 px-1.5 text-center text-xs font-medium text-gray-400">
+                                  {idx + 1}.
+                                </td>
                                 <td className="py-2 px-1.5">
                                   <div className="flex items-center gap-1.5">
                                     {!item.is_sub ? (
@@ -1043,7 +1047,7 @@ export default function PenjualanPage() {
                     <div className="flex items-start gap-3">
                       {settings.store_logo && (
                         <img
-                          src={`${api.defaults.baseURL?.replace('/api', '')}/storage/${settings.store_logo}`}
+                          src={`${api.defaults.baseURL?.replace(/\/api$/, '')}/storage/${settings.store_logo}`}
                           alt="Logo"
                           style={{ height: '52px', width: '52px', objectFit: 'contain' }}
                         />
@@ -1098,6 +1102,7 @@ export default function PenjualanPage() {
             <table className="w-full border-collapse" style={{ fontSize: '14px', tableLayout: 'fixed', marginTop: '4px' }}>
               <thead>
                 <tr style={{ borderTop: '1.5px solid black', borderBottom: '1.5px solid black' }}>
+                  <th style={{ padding: '3px 2px', textAlign: 'center', width: '30px' }}>No.</th>
                   <th style={{ padding: '3px 2px', textAlign: 'left', width: 'auto' }}>Nama Produk</th>
                   <th style={{ padding: '3px 2px', textAlign: 'center', width: '40px' }}>Qty</th>
                   <th style={{ padding: '3px 2px', textAlign: 'center', width: '60px' }}>Satuan</th>
@@ -1111,6 +1116,7 @@ export default function PenjualanPage() {
                     const isSubItem = !!item.parent_id;
                     return (
                       <tr key={idx} style={{ lineHeight: '1.15' }}>
+                        <td style={{ padding: '1px 2px', textAlign: 'center' }}>{idx + 1}.</td>
                         <td style={{ padding: '1px 2px', paddingLeft: isSubItem ? '16px' : '2px' }}>
                           {item.product?.name || item.manual_name || 'Unit'}
                         </td>
