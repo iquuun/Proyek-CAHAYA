@@ -665,21 +665,13 @@ export default function PembelianTab() {
                   {formData.items.length === 0 ? (
                     <p className="text-xs text-gray-500 text-center py-2">Tidak ada barang spesifik dicatat (Hanya mencatat total).</p>
                   ) : (
-                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-[300px] min-h-[120px] overflow-y-auto pr-1">
                       {formData.items.map((item, idx) => (
                         <div key={idx} className="flex gap-2 items-start bg-white p-2 border border-gray-200 rounded">
                           <div className="flex-1">
                             <label className="block text-[11px] text-gray-500 mb-1">Produk</label>
                             <Select
                               className="text-xs"
-                              styles={{
-                                control: (base) => ({ ...base, minHeight: '30px', height: '30px' }),
-                                valueContainer: (base) => ({ ...base, padding: '0 8px' }),
-                                input: (base) => ({ ...base, margin: 0, padding: 0 }),
-                                option: (base) => ({ ...base, fontSize: '11px', padding: '6px 8px' }),
-                                singleValue: (base) => ({ ...base, fontSize: '11px' }),
-                                indicatorsContainer: (base) => ({ ...base, height: '30px' })
-                              }}
                               options={products.map(p => ({ value: p.id.toString(), label: p.name }))}
                               value={
                                 item.product_id
@@ -696,6 +688,16 @@ export default function PembelianTab() {
                               }}
                               placeholder="Cari..."
                               isSearchable
+                              menuPortalTarget={document.body}
+                              styles={{
+                                control: (base) => ({ ...base, minHeight: '30px', height: '30px' }),
+                                valueContainer: (base) => ({ ...base, padding: '0 8px' }),
+                                input: (base) => ({ ...base, margin: 0, padding: 0 }),
+                                option: (base) => ({ ...base, fontSize: '11px', padding: '6px 8px' }),
+                                singleValue: (base) => ({ ...base, fontSize: '11px' }),
+                                indicatorsContainer: (base) => ({ ...base, height: '30px' }),
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 })
+                              }}
                             />
                           </div>
                           <div className="w-20">

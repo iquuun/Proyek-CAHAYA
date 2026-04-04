@@ -109,7 +109,10 @@ export default function PembukuanPenjualanTab() {
   const saveEdit = async (id: number) => {
     try {
       setSaving(true);
-      const isLunas = Number(editForm.keluar_tf) > 0 ? 'lunas' : 'belum';
+      const masukDP = Number(editForm.masuk_dp);
+      const keluarTF = Number(editForm.keluar_tf);
+      const isLunas = (masukDP > 0 && keluarTF >= masukDP) ? 'lunas' : 'belum';
+      
       const payload = {
         ...editForm,
         status_pencairan: isLunas
@@ -473,9 +476,10 @@ export default function PembukuanPenjualanTab() {
                         {sisa > 0 ? sisa.toLocaleString('id-ID') : '-'}
                       </td>
                       <td className="px-3 py-2 text-center">
-                        <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${keluarTF > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                          }`}>
-                          {keluarTF > 0 ? 'LUNAS' : 'PROSES'}
+                        <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${
+                          (masukDP > 0 && keluarTF >= masukDP) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {(masukDP > 0 && keluarTF >= masukDP) ? 'LUNAS' : 'PROSES'}
                         </span>
                       </td>
                       <td className="px-3 py-2 text-center">
