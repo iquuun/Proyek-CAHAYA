@@ -688,7 +688,7 @@ export default function PenjualanPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 no-print items-start">
 
               {/* Left: Customer Info & Review E-Faktur */}
-              <div className="lg:col-span-2 flex flex-col gap-2.5 h-[calc(100vh-110px)]">
+              <div className="lg:col-span-2 flex flex-col gap-2.5 h-auto lg:h-[calc(100vh-110px)]">
                 {/* Customer Info Form */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 shrink-0">
                   <h3 className="text-sm font-semibold text-gray-800 mb-2">Informasi Pelanggan</h3>
@@ -769,7 +769,7 @@ export default function PenjualanPage() {
                 <div className="bg-white rounded-xl shadow-lg border-t-[3px] border-[#3B82F6] p-3 flex flex-col flex-1 min-h-0">
                   <div className="flex justify-between items-center mb-2 pb-2 border-b border-gray-100 shrink-0">
                     <h3 className="text-sm font-bold text-gray-800 uppercase tracking-tight">REVIEW E-FAKTUR</h3>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                        <button 
                         onClick={() => setIsTemplateModalOpen(true)}
                         className="text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 px-2.5 rounded-md font-bold shadow-sm transition-all flex items-center gap-1"
@@ -800,7 +800,7 @@ export default function PenjualanPage() {
                   </div>
 
                   {/* Cart Table */}
-                  <div className="flex-1 overflow-y-auto pr-1 mb-4 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent max-h-[400px]">
+                  <div className="flex-1 overflow-y-auto pr-1 mb-4 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent min-h-[300px]">
                     {saleItems.length === 0 ? (
                       <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-3 opacity-50">
                         <ShoppingCart size={48} strokeWidth={1} />

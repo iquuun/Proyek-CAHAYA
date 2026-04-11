@@ -6,7 +6,7 @@ $kernel->bootstrap();
 
 try {
     $request = Illuminate\Http\Request::create('/api/nilai-aset', 'GET');
-    $data = app()->make('App\Http\Controllers\NilaiAsetController')->index($request)->getData();
+    $data = app()->make('App\Http\Controllers\NilaiAsetController')->index()->getData();
     echo "SUCCESS\n";
     print_r($data);
 } catch (\Exception $e) {

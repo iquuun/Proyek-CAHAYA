@@ -75,7 +75,7 @@ class SaleController extends Controller
             if (!empty($validated['invoice'])) {
                 $invoice = $validated['invoice'];
             } else {
-                $startNumberSetting = \Illuminate\Support\Facades\DB::table('settings')->where('key', 'invoice_start_number')->value('value');
+                $startNumberSetting = DB::table('settings')->where('key', 'invoice_start_number')->value('value');
                 $startNumber = $startNumberSetting ? (int)$startNumberSetting : 10000;
                 
                 $lastSale = Sale::orderBy('id', 'desc')->first();

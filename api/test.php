@@ -5,7 +5,8 @@ $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
 try {
-    $data = app()->make('App\Http\Controllers\DashboardController')->index()->getData();
+    $request = Illuminate\Http\Request::create('/api/dashboard', 'GET');
+    $data = app()->make('App\Http\Controllers\DashboardController')->index($request)->getData();
     echo "SUCCESS\n";
     print_r($data);
 }
