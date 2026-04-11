@@ -27,6 +27,8 @@ export default function EmployeeSalaryTab() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [promptModal, setPromptModal] = useState<{isOpen: boolean, value: string}>({isOpen: false, value: ''});
+  const [confirmDialog, setConfirmDialog] = useState<{isOpen: boolean, id: number | null}>({isOpen: false, id: null});
 
   // Form State
   const [form, setForm] = useState({
@@ -107,26 +109,42 @@ export default function EmployeeSalaryTab() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Hapus riwayat gaji ini? Transaksi di buku kas juga akan dihapus.')) return;
+    setConfirmDialog({ isOpen: true, id });
+  };
+
+  const executeDelete = async () => {
+    if (!confirmDialog.id) return;
     try {
-      await api.delete(`/salaries/${id}`);
+      await api.delete(`/salaries/${confirmDialog.id}`);
       toast.success('Riwayat gaji dihapus');
       fetchSalaries();
     } catch (err) {
       toast.error('Gagal menghapus data');
     }
+    setConfirmDialog({ isOpen: false, id: null });
   };
 
   const handleAddEmployee = async () => {
-    const name = window.prompt('Nama Karyawan Baru:');
+    setPromptModal({ isOpen: true, value: '' });
+  };
+
+  const submitAddEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = promptModal.value.trim();
     if (!name) return;
     try {
       await api.post('/employees', { name });
       fetchEmployees();
       toast.success('Karyawan ditambahkan');
-    } catch (err) {
-      toast.error('Gagal menambahkan karyawan');
+    } catch (err: any) {
+      if (err.response?.status === 422 && err.response?.data?.errors) {
+        const firstError = Object.values(err.response.data.errors)[0] as string[];
+        toast.error(firstError[0]);
+      } else {
+        toast.error('Gagal menambahkan karyawan');
+      }
     }
+    setPromptModal({ isOpen: false, value: '' });
   };
 
   return (
@@ -350,6 +368,44 @@ export default function EmployeeSalaryTab() {
                     </button>
                  </div>
               </form>
+           </div>
+        </div>
+      )}
+
+      {/* Prompt Modal */}
+      {promptModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-3 animate-in fade-in duration-200">
+           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden p-5">
+              <h3 className="text-sm font-bold text-gray-800 mb-2">Nama Karyawan Baru</h3>
+              <form onSubmit={submitAddEmployee}>
+                <input
+                  type="text"
+                  autoFocus
+                  required
+                  value={promptModal.value}
+                  onChange={(e) => setPromptModal({...promptModal, value: e.target.value})}
+                  placeholder="Masukkan nama..."
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-4 outline-none focus:ring-1 focus:ring-purple-500"
+                />
+                <div className="flex gap-2 justify-end">
+                  <button type="button" onClick={() => setPromptModal({isOpen: false, value: ''})} className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Batal</button>
+                  <button type="submit" className="px-4 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg">Simpan</button>
+                </div>
+              </form>
+           </div>
+        </div>
+      )}
+
+      {/* Confirm Modal */}
+      {confirmDialog.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] flex items-center justify-center p-3 animate-in fade-in duration-200">
+           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden p-5">
+              <h3 className="text-sm font-bold text-gray-800 mb-2">Hapus Riwayat Gaji?</h3>
+              <p className="text-xs text-gray-500 mb-5">Riwayat transaksi pemotongan gaji di buku kas juga akan ikut terhapus.</p>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setConfirmDialog({isOpen: false, id: null})} className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Batal</button>
+                <button onClick={executeDelete} className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg">Ya, Hapus</button>
+              </div>
            </div>
         </div>
       )}

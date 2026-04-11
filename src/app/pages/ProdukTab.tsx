@@ -41,6 +41,9 @@ export default function ProdukTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
+  // Custom Delete Confirm
+  const [confirmDelete, setConfirmDelete] = useState<{isOpen: boolean, id: number | null, name: string}>({isOpen: false, id: null, name: ''});
+
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -226,22 +229,31 @@ export default function ProdukTab() {
       handleCloseModal();
       fetchData();
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Gagal menyimpan produk');
+      if (err.response?.status === 422 && err.response?.data?.errors) {
+        const firstError = Object.values(err.response.data.errors)[0] as string[];
+        toast.error(firstError[0] || 'Validasi gagal, silakan cek input Anda.');
+      } else {
+        toast.error(err.response?.data?.message || 'Gagal menyimpan produk');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (id: number, name: string) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus produk "${name}"?`)) {
-      try {
-        await api.delete(`/products/${id}`);
-        toast.success(`Produk ${name} telah dihapus.`);
-        fetchData();
-      } catch (err: any) {
-        toast.error(err.response?.data?.message || 'Gagal menghapus produk');
-      }
+    setConfirmDelete({ isOpen: true, id, name });
+  };
+
+  const executeDelete = async () => {
+    if (!confirmDelete.id) return;
+    try {
+      await api.delete(`/products/${confirmDelete.id}`);
+      toast.success(`Produk ${confirmDelete.name} telah dihapus.`);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Gagal menghapus produk');
     }
+    setConfirmDelete({ isOpen: false, id: null, name: '' });
   };
 
   const categories = ['all', ...new Set(products.map((p) => p.category?.name).filter(Boolean) as string[])];
@@ -642,6 +654,22 @@ export default function ProdukTab() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Modal */}
+      {confirmDelete.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[60] flex items-center justify-center p-3 animate-in fade-in duration-200">
+           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm overflow-hidden p-5">
+              <h3 className="text-sm font-bold text-gray-800 mb-2">Hapus Produk?</h3>
+              <p className="text-xs text-gray-500 mb-5">
+                Apakah Anda yakin ingin menghapus produk <span className="font-bold text-gray-800">"{confirmDelete.name}"</span>? Transaksi yang sudah menggunakan produk ini mungkin akan terpengaruh.
+              </p>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setConfirmDelete({isOpen: false, id: null, name: ''})} className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Batal</button>
+                <button onClick={executeDelete} className="px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg">Ya, Hapus</button>
+              </div>
+           </div>
         </div>
       )}
     </div>
