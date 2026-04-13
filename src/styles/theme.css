@@ -256,3 +256,221 @@
     animation: slide-up-fade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 }
+
+/* ================================================================
+   GLOBAL DARK MODE OVERRIDES
+   Automatically adapts hardcoded Tailwind colors used across all pages.
+   This avoids having to add dark: variants to every single component.
+   ================================================================ */
+
+/* --- Backgrounds --- */
+.dark .bg-white {
+  background-color: #0f172a !important; /* slate-900 */
+}
+
+.dark .bg-gray-50,
+.dark .bg-gray-100 {
+  background-color: #1e293b !important; /* slate-800 */
+}
+
+.dark .bg-gray-50\/50,
+.dark .bg-gray-50\/30 {
+  background-color: rgba(30, 41, 59, 0.5) !important;
+}
+
+.dark .bg-gray-200 {
+  background-color: #334155 !important; /* slate-700 */
+}
+
+/* --- Text Colors --- */
+.dark .text-gray-900,
+.dark .text-gray-800 {
+  color: #f1f5f9 !important; /* slate-100 */
+}
+
+.dark .text-gray-700 {
+  color: #e2e8f0 !important; /* slate-200 */
+}
+
+.dark .text-gray-600 {
+  color: #cbd5e1 !important; /* slate-300 */
+}
+
+.dark .text-gray-500 {
+  color: #94a3b8 !important; /* slate-400 */
+}
+
+.dark .text-gray-400 {
+  color: #64748b !important; /* slate-500 — subtle labels */
+}
+
+.dark .text-gray-300 {
+  color: #475569 !important; /* slate-600 */
+}
+
+.dark .text-gray-200 {
+  color: #334155 !important; /* slate-700 — icons */
+}
+
+/* --- Border Colors --- */
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-50 {
+  border-color: #1e293b !important; /* slate-800 */
+}
+
+.dark .border-gray-300 {
+  border-color: #334155 !important; /* slate-700 */
+}
+
+.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-gray-50 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1e293b !important;
+}
+
+/* --- Shadows (soften in dark mode) --- */
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg,
+.dark .shadow-xl,
+.dark .shadow-2xl {
+  --tw-shadow-color: rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4) !important;
+}
+
+.dark .shadow-inner {
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3) !important;
+}
+
+/* color-specific shadows (remove colored glow in dark) */
+.dark [class*="shadow-blue-"],
+.dark [class*="shadow-purple-"],
+.dark [class*="shadow-emerald-"],
+.dark [class*="shadow-red-"],
+.dark [class*="shadow-amber-"],
+.dark [class*="shadow-green-"] {
+  --tw-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+}
+
+/* --- Light-tinted backgrounds (common in badges/labels) --- */
+.dark .bg-blue-50 { background-color: rgba(59,130,246,0.1) !important; }
+.dark .bg-blue-100 { background-color: rgba(59,130,246,0.15) !important; }
+.dark .bg-green-50 { background-color: rgba(16,185,129,0.1) !important; }
+.dark .bg-green-100 { background-color: rgba(16,185,129,0.15) !important; }
+.dark .bg-emerald-50 { background-color: rgba(16,185,129,0.1) !important; }
+.dark .bg-emerald-100 { background-color: rgba(16,185,129,0.15) !important; }
+.dark .bg-red-50 { background-color: rgba(239,68,68,0.1) !important; }
+.dark .bg-red-100 { background-color: rgba(239,68,68,0.15) !important; }
+.dark .bg-amber-50 { background-color: rgba(245,158,11,0.1) !important; }
+.dark .bg-amber-100 { background-color: rgba(245,158,11,0.15) !important; }
+.dark .bg-purple-50 { background-color: rgba(139,92,246,0.1) !important; }
+.dark .bg-purple-100 { background-color: rgba(139,92,246,0.15) !important; }
+.dark .bg-orange-50 { background-color: rgba(249,115,22,0.1) !important; }
+.dark .bg-yellow-50 { background-color: rgba(234,179,8,0.1) !important; }
+.dark .bg-indigo-50 { background-color: rgba(99,102,241,0.1) !important; }
+.dark .bg-cyan-50 { background-color: rgba(6,182,212,0.1) !important; }
+.dark .bg-rose-50 { background-color: rgba(244,63,94,0.1) !important; }
+.dark .bg-teal-50 { background-color: rgba(20,184,166,0.1) !important; }
+
+/* light-50/30 fractional backgrounds */
+.dark .bg-red-50\/30 { background-color: rgba(239,68,68,0.05) !important; }
+.dark .bg-emerald-50\/30 { background-color: rgba(16,185,129,0.05) !important; }
+
+/* -- Tinted border colors -- */
+.dark .border-blue-100,
+.dark .border-blue-200 { border-color: rgba(59,130,246,0.2) !important; }
+.dark .border-green-100,
+.dark .border-green-200 { border-color: rgba(16,185,129,0.2) !important; }
+.dark .border-emerald-100,
+.dark .border-emerald-200 { border-color: rgba(16,185,129,0.2) !important; }
+.dark .border-red-100,
+.dark .border-red-200 { border-color: rgba(239,68,68,0.2) !important; }
+.dark .border-amber-100,
+.dark .border-amber-200 { border-color: rgba(245,158,11,0.2) !important; }
+.dark .border-purple-100,
+.dark .border-purple-200 { border-color: rgba(139,92,246,0.2) !important; }
+.dark .border-orange-100,
+.dark .border-orange-200,
+.dark .border-orange-300 { border-color: rgba(249,115,22,0.2) !important; }
+
+/* --- Form Elements --- */
+.dark input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+.dark select,
+.dark textarea {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* date/time input calendar icon */
+.dark input[type="date"]::-webkit-calendar-picker-indicator,
+.dark input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+/* --- Tables --- */
+.dark thead .bg-gray-50,
+.dark thead .bg-gray-100 {
+  background-color: #0f172a !important;
+}
+
+.dark tbody tr:hover {
+  background-color: rgba(30, 41, 59, 0.5) !important;
+}
+
+/* --- Modals / Overlays --- */
+.dark .bg-slate-900\/50,
+.dark .bg-slate-900\/40,
+.dark .bg-black\/50 {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+/* --- Ring Colors --- */
+.dark .ring-blue-400,
+.dark .focus\:ring-blue-400:focus {
+  --tw-ring-color: rgba(59,130,246,0.4) !important;
+}
+
+/* --- Specific Component Patterns --- */
+
+/* Stat cards with gradients - keep as-is since they use strong colors */
+
+/* Tabs / navigation pills on white bg */
+.dark .bg-white\/10 { background-color: rgba(255,255,255,0.1) !important; }
+.dark .bg-white\/20 { background-color: rgba(255,255,255,0.2) !important; }
+
+/* hover states */
+.dark .hover\:bg-gray-50:hover { background-color: #1e293b !important; }
+.dark .hover\:bg-gray-100:hover { background-color: #334155 !important; }
+.dark .hover\:bg-gray-200:hover { background-color: #475569 !important; }
+
+/* --- Print: always force light mode --- */
+@media print {
+  .dark .bg-white { background-color: #ffffff !important; }
+  .dark .text-gray-900,
+  .dark .text-gray-800,
+  .dark .text-gray-700 { color: #000000 !important; }
+}
+
+/* --- Scrollbar --- */
+.dark ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}

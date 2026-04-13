@@ -16,13 +16,13 @@ export default function CashFlowPage() {
   return (
     <div className="space-y-6">
       {/* Header Tabs */}
-      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md rounded-xl shadow-sm border border-gray-100 p-2 flex gap-2">
+      <div className="sticky top-0 z-40 bg-white p-1 rounded-xl shadow-sm border border-gray-100 flex gap-1 w-fit">
         <button
           onClick={() => setActiveTab('laba_rugi')}
-          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 ${
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
             activeTab === 'laba_rugi'
-              ? 'bg-[#3B82F6] text-white shadow-sm'
-              : 'text-gray-600 hover:bg-gray-100'
+              ? 'bg-[#3B82F6] text-white shadow-md'
+              : 'text-gray-500 hover:bg-gray-50'
           }`}
         >
           <TrendingUp size={16} />
@@ -30,10 +30,10 @@ export default function CashFlowPage() {
         </button>
         <button
           onClick={() => setActiveTab('pembukuan')}
-          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 ${
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
             activeTab === 'pembukuan'
-              ? 'bg-[#3B82F6] text-white shadow-sm'
-              : 'text-gray-600 hover:bg-gray-100'
+              ? 'bg-[#3B82F6] text-white shadow-md'
+              : 'text-gray-500 hover:bg-gray-50'
           }`}
         >
           <LayoutList size={16} />
@@ -41,10 +41,10 @@ export default function CashFlowPage() {
         </button>
         <button
           onClick={() => setActiveTab('mutasi')}
-          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 ${
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
             activeTab === 'mutasi'
-              ? 'bg-[#3B82F6] text-white shadow-sm'
-              : 'text-gray-600 hover:bg-gray-100'
+              ? 'bg-[#3B82F6] text-white shadow-md'
+              : 'text-gray-500 hover:bg-gray-50'
           }`}
         >
           <Wallet size={16} />
@@ -52,10 +52,10 @@ export default function CashFlowPage() {
         </button>
         <button
           onClick={() => setActiveTab('gaji')}
-          className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-2 ${
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
             activeTab === 'gaji'
-              ? 'bg-purple-600 text-white shadow-sm'
-              : 'text-gray-600 hover:bg-gray-100'
+              ? 'bg-purple-600 text-white shadow-md'
+              : 'text-gray-500 hover:bg-gray-50'
           }`}
         >
           <UserCircle size={16} />

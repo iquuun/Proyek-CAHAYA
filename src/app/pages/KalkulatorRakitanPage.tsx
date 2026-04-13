@@ -521,7 +521,7 @@ export default function KalkulatorPage() {
                                     const availableProducts = products.filter(p => !item.kategori || item.kategori === 'CUSTOM' || p.category?.name?.toUpperCase() === item.kategori);
 
                                     return (
-                                        <div key={item.id} className="flex items-center gap-2 bg-gray-50 border border-gray-200 p-1.5 rounded-lg relative group">
+                                        <div key={item.id} className="flex items-center gap-2 bg-gray-50 border border-gray-200 p-1.5 rounded-lg relative group" style={{ zIndex: rakitanItems.length - idx }}>
                                             <div className="w-[18%] md:w-[15%]">
                                                 <select 
                                                     value={item.kategori} 
@@ -850,24 +850,24 @@ export default function KalkulatorPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-2">
                 <div>
-                    <h1 className="text-2xl font-black text-gray-800 flex items-center gap-3">
-                        <Monitor className="text-[#3B82F6]" size={28} />
+                    <h1 className="text-xl font-black text-gray-800 flex items-center gap-3">
+                        <Monitor className="text-[#3B82F6]" size={24} />
                         Kalkulator Margin Aman
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1">Simulasi akurat harga jual online & mode screenshot rakitan.</p>
+                    <p className="text-xs text-gray-500 mt-1">Simulasi akurat harga jual online & mode screenshot rakitan.</p>
                 </div>
                 
-                <div className="flex bg-white shadow-sm border p-1 rounded-xl">
-                    <button onClick={() => setActiveTab('rakitan')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'rakitan' ? 'bg-[#3B82F6] text-white shadow' : 'text-gray-500 hover:bg-gray-50'}`}>
-                        <Monitor size={16} className="inline mr-2" /> Rakitan PC
+                <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-100 flex gap-1 w-fit">
+                    <button onClick={() => setActiveTab('rakitan')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'rakitan' ? 'bg-[#3B82F6] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+                        <Monitor size={16} /> Rakitan PC
                     </button>
-                    <button onClick={() => setActiveTab('satuan')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'satuan' ? 'bg-[#3B82F6] text-white shadow' : 'text-gray-500 hover:bg-gray-50'}`}>
-                        <ShoppingBag size={16} className="inline mr-2" /> E-commerce
+                    <button onClick={() => setActiveTab('satuan')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'satuan' ? 'bg-[#3B82F6] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+                        <ShoppingBag size={16} /> E-commerce
                     </button>
-                    <button onClick={() => setActiveTab('pengaturan')} className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'pengaturan' ? 'bg-gray-800 text-white shadow' : 'text-gray-500 hover:bg-gray-50'}`}>
-                        <Settings size={16} className="inline mr-2" /> Profil Toko
+                    <button onClick={() => setActiveTab('pengaturan')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'pengaturan' ? 'bg-gray-800 text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+                        <Settings size={16} /> Profil Toko
                     </button>
                 </div>
             </div>

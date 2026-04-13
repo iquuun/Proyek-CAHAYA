@@ -64,17 +64,57 @@ export default function PembukuanPenjualanTab() {
 
   // Filters & Pagination
   const [searchTerm, setSearchTerm] = useState('');
-  const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'all'>('month');
-  const [filterValue, setFilterValue] = useState(() => {
-    const now = new Date();
-    return now.toISOString().split('T')[0]; // Default to current date
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [dateRange, setDateRange] = useState(() => {
+    const today = new Date();
+    const start = new Date();
+    start.setMonth(today.getMonth() - 1);
+    return {
+      preset: 'month', // today, yesterday, week, month, 3month, all, custom
+      start: start.toISOString().split('T')[0],
+      end: today.toISOString().split('T')[0]
+    };
   });
+  const applyPreset = (preset: string) => {
+    const today = new Date();
+    let start = new Date();
+    let end = new Date();
+    
+    if (preset === 'today') {
+      // default
+    } else if (preset === 'yesterday') {
+      start.setDate(today.getDate() - 1);
+      end.setDate(today.getDate() - 1);
+    } else if (preset === 'week') {
+      start.setDate(today.getDate() - 7);
+    } else if (preset === 'month') {
+      start.setMonth(today.getMonth() - 1);
+    } else if (preset === '3month') {
+      start.setMonth(today.getMonth() - 3);
+    } else if (preset === 'all') {
+      start = new Date('2020-01-01');
+    }
+    
+    setDateRange({
+      preset,
+      start: start.toISOString().split('T')[0],
+      end: end.toISOString().split('T')[0]
+    });
+    if (preset !== 'custom') setShowDatePicker(false);
+  };
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
+  // New Filters
+  const [filterStatus, setFilterStatus] = useState<'all' | 'lunas' | 'belum'>('all');
+  const [filterChannel, setFilterChannel] = useState<string>('all');
+
+  // New Local Checkbox State (Not saved to DB)
+  const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
+
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, timeFilter]);
+  }, [searchTerm, dateRange]);
 
   useEffect(() => {
     fetchSales();
@@ -130,54 +170,54 @@ export default function PembukuanPenjualanTab() {
     }
   };
 
-  const toggleVerify = async (id: number) => {
-    try {
-      const res = await api.post(`/sales/${id}/toggle-verify`);
-      setSales(sales.map(s => s.id === id ? { ...s, is_verified: res.data.is_verified } : s));
-      toast.success(res.data.is_verified ? 'Invoice diverifikasi' : 'Verifikasi dibatalkan');
-    } catch (err) {
-      toast.error('Gagal memperbarui status verifikasi');
-    }
+  const toggleCheck = (id: number) => {
+    const newChecked = new Set(checkedItems);
+    if (newChecked.has(id)) newChecked.delete(id);
+    else newChecked.add(id);
+    setCheckedItems(newChecked);
   };
 
   // Filtering Logic
   const filteredSales = useMemo(() => {
     return sales.filter(s => {
-      // Dynamic Time Filter
+      // Dynamic Date Range Filter
       const saleDateStr = s.tanggal.split(' ')[0]; // YYYY-MM-DD
-      const selectedDate = new Date(filterValue);
+      const saleDate = new Date(saleDateStr);
+      saleDate.setHours(0,0,0,0);
       
-      if (timeFilter === 'today') {
-        if (saleDateStr !== filterValue) return false;
-      } else if (timeFilter === 'week') {
-        const startOfWeek = new Date(selectedDate);
-        startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay()); // Sunday
-        startOfWeek.setHours(0,0,0,0);
-        
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(startOfWeek.getDate() + 6);
-        endOfWeek.setHours(23,59,59,999);
-        
-        const saleDate = new Date(saleDateStr);
-        if (saleDate < startOfWeek || saleDate > endOfWeek) return false;
-      } else if (timeFilter === 'month') {
-        const currentMonth = filterValue.substring(0, 7); // YYYY-MM
-        if (!saleDateStr.startsWith(currentMonth)) return false;
+      if (dateRange.preset !== 'all') {
+         const start = new Date(dateRange.start);
+         start.setHours(0,0,0,0);
+         const end = new Date(dateRange.end);
+         end.setHours(23,59,59,999);
+         if (saleDate < start || saleDate > end) return false;
       }
 
       // Search Filter
       const search = searchTerm.toLowerCase();
       if (search) {
-        return (
+        const matchesSearch = (
           s.invoice.toLowerCase().includes(search) ||
           (s.nama_barang_manual || '').toLowerCase().includes(search) ||
           (s.username_pembeli || '').toLowerCase().includes(search) ||
           s.channel.toLowerCase().includes(search)
         );
+        if (!matchesSearch) return false;
       }
+
+      // Status Filter
+      if (filterStatus !== 'all') {
+        const isLunas = (Number(s.masuk_dp) > 0 && Number(s.keluar_tf) >= Number(s.masuk_dp));
+        if (filterStatus === 'lunas' && !isLunas) return false;
+        if (filterStatus === 'belum' && isLunas) return false;
+      }
+
+      // Channel Filter
+      if (filterChannel !== 'all' && s.channel !== filterChannel) return false;
+
       return true;
     });
-  }, [sales, searchTerm, timeFilter]);
+  }, [sales, searchTerm, dateRange, filterStatus, filterChannel]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredSales.length / itemsPerPage) || 1;
@@ -190,11 +230,20 @@ export default function PembukuanPenjualanTab() {
   const totalOmzet = useMemo(() => filteredSales.reduce((sum, s) => sum + Number(s.total_penjualan), 0), [filteredSales]);
   const totalNet = useMemo(() => filteredSales.reduce((sum, s) => sum + Number(s.masuk_dp || 0), 0), [filteredSales]);
   const totalHpp = useMemo(() => filteredSales.reduce((sum, s) => sum + Number(s.harga_modal_manual || 0), 0), [filteredSales]);
+  const totalAdm = useMemo(() => filteredSales.reduce((sum, s) => {
+    if (s.channel !== 'UMUM' && Number(s.masuk_dp) > 0) {
+      return sum + (Number(s.total_penjualan) - Number(s.masuk_dp));
+    }
+    return sum;
+  }, 0), [filteredSales]);
   
-  const totalLabaBersih = totalNet - totalHpp;
+  const totalLabaBersih = totalNet - totalHpp; // Margin is now Sales - HPP - ADM which is equal to Net - HPP if Net = Sales - ADM
   const totalHutangMarket = useMemo(() => {
     return filteredSales
-      .filter(s => s.status_pencairan === 'belum' && Number(s.masuk_dp) > 0)
+      .filter(s => {
+        const isLunas = (Number(s.masuk_dp) > 0 && Number(s.keluar_tf) >= Number(s.masuk_dp));
+        return !isLunas && Number(s.masuk_dp) > 0;
+      })
       .reduce((sum, s) => sum + (Number(s.masuk_dp) - Number(s.keluar_tf || 0)), 0);
   }, [filteredSales]);
 
@@ -227,7 +276,7 @@ export default function PembukuanPenjualanTab() {
       </div>
 
       {/* Stats Summary Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <StatCard
           title="Total Omzet (Gross)"
           value={`Rp ${totalOmzet.toLocaleString('id-ID')}`}
@@ -243,9 +292,16 @@ export default function PembukuanPenjualanTab() {
           colorClass="from-slate-600 to-slate-700"
         />
         <StatCard
+          title="Biaya ADM Market"
+          value={`Rp ${totalAdm.toLocaleString('id-ID')}`}
+          subtitle="Total potongan marketplace"
+          icon={DollarSign}
+          colorClass="from-rose-600 to-rose-700"
+        />
+        <StatCard
           title="Laba Bersih (Profit)"
           value={`Rp ${totalLabaBersih.toLocaleString('id-ID')}`}
-          subtitle={`Margin keuntungan (${((totalLabaBersih / (totalNet || 1)) * 100).toFixed(1)}%)`}
+          subtitle={`Margin keuntungan (${((totalLabaBersih / (totalOmzet || 1)) * 100).toFixed(1)}%)`}
           icon={TrendingUp}
           colorClass="from-emerald-600 to-emerald-700"
         />
@@ -275,82 +331,120 @@ export default function PembukuanPenjualanTab() {
 
       {/* Filters & Time Selection */}
       <div className="flex flex-col xl:flex-row gap-4 items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-          {/* Main Select Scale */}
-          <div className="flex items-center gap-1 p-1 bg-gray-50 rounded-xl border border-gray-200">
-            {[
-              { id: 'today', label: 'Harian' },
-              { id: 'week', label: 'Mingguan' },
-              { id: 'month', label: 'Bulanan' },
-              { id: 'all', label: 'Semua' }
-            ].map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setTimeFilter(f.id as any)}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
-                  timeFilter === f.id 
-                    ? 'bg-blue-600 text-white shadow-md' 
-                    : 'text-gray-500 hover:bg-white hover:text-blue-600'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Dynamic Navigation Picker */}
-          {timeFilter !== 'all' && (
-            <div className="flex items-center gap-2 bg-gray-50 px-2 py-1 rounded-xl border border-gray-200">
-              <button 
-                onClick={() => {
-                  const d = new Date(filterValue);
-                  if (timeFilter === 'today') d.setDate(d.getDate() - 1);
-                  else if (timeFilter === 'week') d.setDate(d.getDate() - 7);
-                  else if (timeFilter === 'month') d.setMonth(d.getMonth() - 1);
-                  setFilterValue(d.toISOString().split('T')[0]);
-                }}
-                className="p-1.5 hover:bg-white rounded-lg text-gray-400 hover:text-blue-600 transition-all"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              
-              <input
-                type={timeFilter === 'month' ? 'month' : 'date'}
-                value={timeFilter === 'month' ? filterValue.substring(0, 7) : filterValue}
-                onChange={(e) => {
-                  let val = e.target.value;
-                  if (timeFilter === 'month') val += "-01";
-                  setFilterValue(val);
-                }}
-                className="bg-transparent text-xs font-black text-blue-600 outline-none uppercase text-center w-28"
-              />
-
-              <button 
-                onClick={() => {
-                  const d = new Date(filterValue);
-                  if (timeFilter === 'today') d.setDate(d.getDate() + 1);
-                  else if (timeFilter === 'week') d.setDate(d.getDate() + 7);
-                  else if (timeFilter === 'month') d.setMonth(d.getMonth() + 1);
-                  setFilterValue(d.toISOString().split('T')[0]);
-                }}
-                className="p-1.5 hover:bg-white rounded-lg text-gray-400 hover:text-blue-600 transition-all"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Search Bar */}
-        <div className="relative w-full md:w-80">
+        {/* Search Bar - LEFTSIDE */}
+        <div className="relative w-full xl:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
           <input
             type="text"
-            placeholder="Cari invoice, pembeli, market..."
-            className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[11px] outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            placeholder="Cari invoice, pembeli..."
+            className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[11px] outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+        </div>
+
+        {/* PRESET & SPECIFIC FILTERS - RIGHTSIDE */}
+        <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto justify-end">
+          {/* DATE RANGE FILTER */}
+          <div className="relative w-full xl:w-auto z-20">
+            <button 
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-[11px] font-bold text-gray-700 hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 w-full xl:w-[265px] justify-between whitespace-nowrap"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400">📅</span>
+                {dateRange.preset === 'all' ? 'Semua Waktu' : 
+                 `${dateRange.start} s/d ${dateRange.end}`}
+              </div>
+              <ChevronRight size={14} className={`text-gray-400 transition-transform ${showDatePicker ? 'rotate-90' : ''}`} />
+            </button>
+
+            {showDatePicker && (
+              <div className="absolute top-11 right-0 w-[320px] md:w-[450px] bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col md:flex-row animate-in fade-in zoom-in duration-200">
+                {/* Presets Sidebar */}
+                <div className="w-full md:w-40 bg-gray-50 border-b md:border-b-0 md:border-r border-gray-100 flex flex-col p-2 gap-1 relative z-10">
+                  {[
+                    { id: 'today', label: 'Hari Ini' },
+                    { id: 'yesterday', label: 'Kemarin' },
+                    { id: 'week', label: '1 Minggu Terakhir' },
+                    { id: 'month', label: '1 Bulan Terakhir' },
+                    { id: '3month', label: '3 Bulan Terakhir' },
+                    { id: 'all', label: 'Semua Waktu' },
+                    { id: 'custom', label: 'Pilih Sendiri' },
+                  ].map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => applyPreset(p.id)}
+                      className={`text-left px-3 py-2 rounded-lg text-xs font-bold transition-all ${dateRange.preset === p.id ? 'bg-[#1D4ED8] text-white shadow-md' : 'text-gray-600 hover:bg-white'}`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                
+                {/* Custom Date Picker Inputs */}
+                <div className="p-4 flex-1 bg-white relative z-10">
+                  <h4 className="text-[10px] font-black uppercase text-gray-400 mb-3 tracking-wider">Rentang Waktu</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1">Mulai Tanggal</label>
+                      <input 
+                        type="date"
+                        value={dateRange.start}
+                        onChange={(e) => setDateRange({ ...dateRange, start: e.target.value, preset: 'custom' })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1">Sampai Tanggal</label>
+                      <input 
+                        type="date"
+                        value={dateRange.end}
+                        onChange={(e) => setDateRange({ ...dateRange, end: e.target.value, preset: 'custom' })}
+                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs font-medium outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <button 
+                      onClick={() => setShowDatePicker(false)}
+                      className="w-full mt-2 py-2 bg-[#1D4ED8] text-white rounded-lg text-xs font-bold shadow-md shadow-blue-500/20 active:scale-95 transition-all"
+                    >
+                      Terapkan / Tutup
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Click outside Overlay (Invisible) */}
+                <div 
+                  className="fixed inset-0 z-0 bg-transparent" 
+                  onClick={() => setShowDatePicker(false)}
+                  style={{zIndex: -1}}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Status Filter */}
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value as any)}
+            className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[11px] font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">SEMUA STATUS</option>
+            <option value="lunas">LUNAS CAIR</option>
+            <option value="belum">BELUM CAIR</option>
+          </select>
+
+          {/* Channel Filter */}
+          <select
+            value={filterChannel}
+            onChange={(e) => setFilterChannel(e.target.value)}
+            className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-[11px] font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500 uppercase"
+          >
+            <option value="all">SEMUA MARKET</option>
+            {Array.from(new Set(sales.map(s => s.channel))).sort().map(ch => (
+              <option key={ch} value={ch}>{ch}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -360,10 +454,11 @@ export default function PembukuanPenjualanTab() {
           <table className="w-full whitespace-nowrap">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="px-3 py-2 text-center text-[10px] uppercase font-bold text-gray-500 tracking-wider">Cek</th>
+                <th className="px-3 py-2 text-center text-[10px] uppercase font-bold text-gray-500 tracking-wider">#</th>
                 <th className="text-left px-3 py-2 text-[10px] uppercase font-bold text-gray-500 tracking-wider">Tgl / Inv</th>
                 <th className="text-left px-3 py-2 text-[10px] uppercase font-bold text-gray-500 tracking-wider">Nama Barang</th>
                 <th className="text-left px-3 py-2 text-[10px] uppercase font-bold text-gray-500 tracking-wider">Market / User</th>
+                <th className="px-3 py-2 text-center text-[10px] uppercase font-bold text-gray-500 tracking-wider">Cek</th>
                 <th className="text-right px-3 py-2 text-[10px] uppercase font-bold text-gray-500 tracking-wider">Harga Jual</th>
                 <th className="text-right px-3 py-2 text-[10px] uppercase font-bold text-gray-500 tracking-wider">Harga Modal</th>
                 <th className="text-right px-3 py-2 text-[10px] uppercase font-bold text-gray-500 tracking-wider">Bersih</th>
@@ -383,9 +478,10 @@ export default function PembukuanPenjualanTab() {
                   </td>
                 </tr>
               ) : (
-                currentItems.map((sale) => {
+                currentItems.map((sale, index) => {
                   const totalQty = sale.items.reduce((s, i) => s + Number(i.qty), 0);
                   const isEditing = editingId === sale.id;
+                  const isChecked = checkedItems.has(sale.id);
 
                   // Kalkulasi (Jika tidak ngedit, pakai dari DB. Jika ngedit, pakai form sementara untuk preview realtime)
                   const hrgJual = Number(sale.total_penjualan);
@@ -397,15 +493,12 @@ export default function PembukuanPenjualanTab() {
                   const labaBersih = masukDP > 0 ? (masukDP - hrgModal) : 0;
                   const sisa = masukDP - keluarTF;
 
+                  const rowIndex = index + 1 + (currentPage - 1) * itemsPerPage;
+
                   return (
-                    <tr key={sale.id} className={`transition-colors text-xs ${sale.is_verified ? 'bg-blue-50/70 hover:bg-blue-100/70' : 'hover:bg-blue-50/10'}`}>
-                      <td className="px-3 py-2 text-center">
-                         <input
-                           type="checkbox"
-                           checked={sale.is_verified}
-                           onChange={() => toggleVerify(sale.id)}
-                           className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                         />
+                    <tr key={sale.id} className={`transition-colors text-xs ${isChecked ? 'bg-blue-50/70 hover:bg-blue-100/70' : 'hover:bg-blue-50/10'}`}>
+                      <td className="px-3 py-2 text-center text-gray-400 font-bold">
+                         {rowIndex}
                       </td>
                       <td className="px-3 py-2">
                         <p className="text-xs font-black text-gray-900 uppercase leading-none">{sale.invoice}</p>
@@ -444,6 +537,14 @@ export default function PembukuanPenjualanTab() {
                             <p className="text-xs font-semibold text-[#3B82F6]">{sale.username_pembeli || '-'}</p>
                           )}
                         </div>
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                         <input
+                           type="checkbox"
+                           checked={isChecked}
+                           onChange={() => toggleCheck(sale.id)}
+                           className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                         />
                       </td>
                       <td className="px-3 py-2 text-right font-medium text-gray-800">
                         {hrgJual.toLocaleString('id-ID')}

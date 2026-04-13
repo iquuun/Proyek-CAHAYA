@@ -32,6 +32,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/nilai-aset', [NilaiAsetController::class , 'index']);
     Route::get('/settings/backup', [SettingController::class, 'backupDatabase']);
     Route::post('/settings/restore', [SettingController::class, 'restoreDatabase']);
+    Route::post('/settings/fix-database', [SettingController::class, 'fixDatabase']);
     Route::post('/settings', [SettingController::class , 'update']);
     Route::post('/logout', [AuthController::class , 'logout']);
     Route::get('/me', [AuthController::class , 'me']);

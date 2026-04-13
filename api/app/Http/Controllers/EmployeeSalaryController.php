@@ -11,7 +11,7 @@ class EmployeeSalaryController extends Controller
 {
     public function index(Request $request)
     {
-        $query = EmployeeSalary::with('employee')->orderBy('tanggal', 'desc');
+        $query = EmployeeSalary::with('employee')->orderBy('tanggal', 'desc')->orderBy('id', 'desc');
         
         if ($request->has('employee_id')) {
             $query->where('employee_id', $request->employee_id);
@@ -39,11 +39,16 @@ class EmployeeSalaryController extends Controller
             $employee = Employee::findOrFail($request->employee_id);
             
             // 1. Create Cash Flow entry
+            $tanggal = $request->tanggal;
+            if (strlen($tanggal) <= 10) {
+                $tanggal .= ' ' . date('H:i:s');
+            }
+
             $cashFlowId = DB::table('cash_flows')->insertGetId([
-                'tanggal' => $request->tanggal . ' ' . date('H:i:s'),
+                'tanggal' => $tanggal,
                 'tipe' => 'keluar',
                 'sumber' => 'gaji_karyawan',
-                'nominal' => $request->total,
+                'nominal' => abs($request->total),
                 'keterangan' => "Gaji {$employee->name}: " . ($request->keterangan ?? "Periode " . date('M Y', strtotime($request->tanggal))),
                 'created_at' => now(),
                 'updated_at' => now(),

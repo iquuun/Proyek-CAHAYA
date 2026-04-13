@@ -667,19 +667,19 @@ export default function PenjualanPage() {
       ) : (
         <div className="space-y-6">
           {/* Tab Switcher */}
-          <div className="sticky top-0 z-40 flex gap-2 bg-white/90 backdrop-blur-md p-1 rounded-xl shadow-sm border border-gray-100 max-w-fit no-print">
+          <div className="sticky top-0 z-40 bg-white p-1 rounded-xl shadow-sm border border-gray-100 flex gap-1 w-fit no-print">
             <button
               onClick={() => setActiveTab('pos')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'pos' ? 'bg-[#3B82F6] text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'pos' ? 'bg-[#3B82F6] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
             >
-              <ShoppingCart size={18} />
+              <ShoppingCart size={16} />
               Kasir
             </button>
             <button
               onClick={() => setActiveTab('history')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-medium transition-all ${activeTab === 'history' ? 'bg-[#3B82F6] text-white' : 'text-gray-500 hover:bg-gray-50'}`}
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'history' ? 'bg-[#3B82F6] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}
             >
-              <History size={18} />
+              <History size={16} />
               Riwayat Penjualan
             </button>
           </div>
@@ -1153,15 +1153,6 @@ export default function PenjualanPage() {
                               </td>
                               <td className="px-3 py-2 text-center">
                                 <div className="flex items-center justify-center gap-1">
-                                  {sale.status_bayar === 'dp' ? (
-                                    <button onClick={() => setPelunasanTarget(sale)} className="p-1 px-2 text-amber-600 bg-amber-50 hover:bg-amber-100 font-bold rounded-md transition-colors text-[10px] mr-1" title="Lunasi Sisa Pembayaran">
-                                      LUNASI
-                                    </button>
-                                  ) : (
-                                    <span className="p-1 px-2 text-green-600 bg-green-50 font-bold rounded-md text-[10px] mr-1 pointer-events-none">
-                                      LUNAS
-                                    </span>
-                                  )}
                                   <button onClick={() => { setLastSale(sale); setTimeout(() => window.print(), 100); }} className="p-1.5 text-gray-400 hover:text-[#3B82F6] hover:bg-blue-50 rounded-md transition-colors" title="Cetak Faktur">
                                     <Printer size={15} />
                                   </button>

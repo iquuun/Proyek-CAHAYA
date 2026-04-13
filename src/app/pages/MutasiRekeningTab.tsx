@@ -32,7 +32,6 @@ const SUMBER_MASUK = [
 const SUMBER_KELUAR = [
   { value: 'bayar_distributor', label: 'Bayar Distributor / Hutang' },
   { value: 'biaya_operasional', label: 'Biaya Operasional' },
-  { value: 'gaji_karyawan', label: 'Gaji Karyawan' },
   { value: 'biaya_umum', label: 'Pengeluaran Lainnya' },
 ];
 
@@ -168,6 +167,9 @@ export default function MutasiRekeningTab() {
         );
       }
       return true;
+    }).sort((a, b) => {
+      const timeDiff = new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime();
+      return timeDiff !== 0 ? timeDiff : b.id - a.id;
     });
   }, [cashFlows, searchTerm, timeFilter, filterValue]);
 
@@ -215,9 +217,9 @@ export default function MutasiRekeningTab() {
   let displaySaldo = saldo;
 
   if (timeFilter !== 'month' && timeFilter !== 'all') {
-      displayMasuk = filteredFlows.filter(f => f.tipe === 'masuk').reduce((acc, f) => acc + Number(f.nominal), 0);
-      displayKeluar = filteredFlows.filter(f => f.tipe === 'keluar').reduce((acc, f) => acc + Number(f.nominal), 0);
-      displayOps = filteredFlows.filter(f => f.sumber === 'biaya_operasional' && f.tipe === 'keluar').reduce((acc, f) => acc + Number(f.nominal), 0);
+      displayMasuk = filteredFlows.filter(f => f.tipe === 'masuk').reduce((acc, f) => acc + Math.abs(Number(f.nominal)), 0);
+      displayKeluar = filteredFlows.filter(f => f.tipe === 'keluar').reduce((acc, f) => acc + Math.abs(Number(f.nominal)), 0);
+      displayOps = filteredFlows.filter(f => f.sumber === 'biaya_operasional' && f.tipe === 'keluar').reduce((acc, f) => acc + Math.abs(Number(f.nominal)), 0);
       displaySaldo = displayMasuk - displayKeluar;
   }
 
@@ -431,7 +433,7 @@ export default function MutasiRekeningTab() {
                     </td>
                     <td className="px-3 py-2 text-right text-xs">
                       <span className={`font-black text-sm ${flow.tipe === 'masuk' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                        {flow.tipe === 'masuk' ? '+' : '-'} Rp {Number(flow.nominal).toLocaleString('id-ID')}
+                        {flow.tipe === 'masuk' ? '+' : '-'} Rp {Math.abs(Number(flow.nominal)).toLocaleString('id-ID')}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500 font-medium">

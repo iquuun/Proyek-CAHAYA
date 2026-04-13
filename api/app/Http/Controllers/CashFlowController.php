@@ -12,7 +12,8 @@ class CashFlowController extends Controller
         $query = DB::table('cash_flows as cf')
             ->leftJoin('app_users as u', 'cf.staff_user_id', '=', 'u.id')
             ->select('cf.*', 'u.name as staff_name')
-            ->orderBy('cf.tanggal', 'desc');
+            ->orderBy('cf.tanggal', 'desc')
+            ->orderBy('cf.id', 'desc');
 
         if ($request->has('tipe') && $request->tipe !== 'all') {
             $query->where('tipe', $request->tipe);
@@ -77,7 +78,22 @@ class CashFlowController extends Controller
 
     public function destroy($id)
     {
-        DB::table('cash_flows')->where('id', $id)->delete();
-        return response()->json(['message' => 'Cash flow berhasil dihapus']);
+        return DB::transaction(function () use ($id) {
+            $flow = DB::table('cash_flows')->where('id', $id)->first();
+            
+            if (!$flow) {
+                return response()->json(['message' => 'Data tidak ditemukan'], 404);
+            }
+
+            // Jika sumbernya adalah gaji_karyawan, hapus juga data di tabel employee_salaries
+            if ($flow->sumber === 'gaji_karyawan') {
+                DB::table('employee_salaries')->where('cash_flow_id', $id)->delete();
+            }
+
+            // Hapus data mutasi utama
+            DB::table('cash_flows')->where('id', $id)->delete();
+
+            return response()->json(['message' => 'Transaksi dan data terkait berhasil dihapus']);
+        });
     }
 }

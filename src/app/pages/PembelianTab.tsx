@@ -228,7 +228,14 @@ export default function PembelianTab() {
       const newPayment = parseFloat(payAmount);
       const totalTerbayar = currentTerbayar + newPayment;
 
-      await api.put(`/purchases/${selectedPurchase.id}`, { terbayar: totalTerbayar });
+      await api.put(`/purchases/${selectedPurchase.id}`, { 
+        terbayar: totalTerbayar,
+        distributor_id: selectedPurchase.distributor_id,
+        tanggal: selectedPurchase.tanggal,
+        total_pembelian: selectedPurchase.total_pembelian,
+        invoice: selectedPurchase.invoice,
+        jatuh_tempo: selectedPurchase.jatuh_tempo
+      });
       setIsPayModalOpen(false);
       fetchData();
     } catch (err: any) {

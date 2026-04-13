@@ -14,17 +14,17 @@ export default function ProdukPage() {
     return (
         <div className="space-y-6">
             {/* Tabs Navigation */}
-            <div className="sticky top-0 z-40 flex gap-2 bg-white/90 backdrop-blur-md p-1 rounded-xl shadow-sm border border-gray-100 max-w-fit">
+            <div className="sticky top-0 z-40 bg-white p-1 rounded-xl shadow-sm border border-gray-100 flex gap-1 w-fit">
                 {tabs.map((tab) => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all font-medium text-xs ${activeTab === tab.id
-                                ? 'bg-[#3B82F6] text-white shadow-sm shadow-[#3B82F6]/20'
-                                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === tab.id
+                                ? 'bg-[#3B82F6] text-white shadow-md'
+                                : 'text-gray-500 hover:bg-gray-50'
                             }`}
                     >
-                        <tab.icon size={14} />
+                        <tab.icon size={16} />
                         {tab.label}
                     </button>
                 ))}

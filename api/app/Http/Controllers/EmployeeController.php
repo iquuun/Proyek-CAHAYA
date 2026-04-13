@@ -14,7 +14,10 @@ class EmployeeController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate(['name' => 'required|string|unique:employees,name']);
+        $request->validate([
+            'name' => 'required|string|unique:employees,name',
+            'base_salary' => 'nullable|numeric|min:0'
+        ]);
         $employee = Employee::create($request->all());
         return response()->json($employee);
     }

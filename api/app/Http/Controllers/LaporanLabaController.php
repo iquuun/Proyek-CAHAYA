@@ -18,21 +18,29 @@ class LaporanLabaController extends Controller
         $hariIni = $now->copy()->startOfDay()->toDateString();
         $hariKemarin = $now->copy()->subDay()->startOfDay()->toDateString();
 
-        // 1. Uang Online (channel ≠ 'UMUM' / offline) bulan ini vs bulan kemarin
-        $uangOnlineBulanIni = (float) DB::table('sales')
+        // 1. Uang Online (Hutang Market / Dana Belum Cair)
+        // Total dana yang masih tertahan di marketplace (Masuk/DP - Keluar/TF) yang belum lunas
+        $uangOnlinePending = (float) DB::table('sales')
+            ->where('channel', '!=', 'UMUM')
+            ->whereRaw('COALESCE(masuk_dp, 0) > 0')
+            ->whereRaw('COALESCE(keluar_tf, 0) < COALESCE(masuk_dp, 0)')
+            ->sum(DB::raw('COALESCE(masuk_dp, 0) - COALESCE(keluar_tf, 0)'));
+
+        // Pemasukan Online Bulan Ini vs Lalu (sebagai pembanding performa sales)
+        $omzetOnlineBulanIni = (float) DB::table('sales')
             ->where('channel', '!=', 'UMUM')
             ->whereBetween('tanggal', [$bulanIni->toDateString(), $bulanIniEnd->toDateString()])
             ->sum('total_penjualan');
 
-        $uangOnlineBulanLalu = (float) DB::table('sales')
+        $omzetOnlineBulanLalu = (float) DB::table('sales')
             ->where('channel', '!=', 'UMUM')
             ->whereBetween('tanggal', [$bulanLalu->toDateString(), $bulanLaluEnd->toDateString()])
             ->sum('total_penjualan');
 
         // 2. Uang di Rekening (saldo dari cash_flows seluruhnya)
         $rekeningData = DB::table('cash_flows')->selectRaw("
-            SUM(CASE WHEN tipe = 'masuk' THEN nominal ELSE 0 END) -
-            SUM(CASE WHEN tipe = 'keluar' THEN nominal ELSE 0 END) as saldo
+            SUM(CASE WHEN tipe = 'masuk' THEN ABS(nominal) ELSE 0 END) -
+            SUM(CASE WHEN tipe = 'keluar' THEN ABS(nominal) ELSE 0 END) as saldo
         ")->first();
         $uangRekening = (float) ($rekeningData->saldo ?? 0);
 
@@ -69,21 +77,71 @@ class LaporanLabaController extends Controller
         // 5. Uang Stok / Nilai Aset
         $uangStok = (float) DB::table('products')->sum(DB::raw('stok_saat_ini * harga_beli'));
 
-        // 6. Pendapatan Harian: hari ini vs kemarin
+        // 6. Laba Bersih Harian (Net Profit): hari ini vs kemarin
+        // Rumus: Total Penjualan - HPP - ADM - Ops
+        
+        // --- HITUNG HARI INI ---
         $pendapatanHariIni = (float) DB::table('sales')
             ->whereDate('tanggal', $hariIni)
             ->sum('total_penjualan');
+            
+        $hppHariIniSql = DB::select("
+            SELECT SUM(si.qty * COALESCE(p.harga_beli, 0)) as total_hpp
+            FROM sales s
+            JOIN sale_items si ON s.id = si.sale_id
+            LEFT JOIN products p ON p.id = si.product_id
+            WHERE DATE(s.tanggal) = ?
+        ", [$hariIni]);
+        $totalHppHariIni = (float) ($hppHariIniSql[0]->total_hpp ?? 0);
+        
+        $admHariIni = (float) DB::table('sales')
+            ->whereDate('tanggal', $hariIni)
+            ->where('channel', '!=', 'UMUM')
+            ->where('masuk_dp', '>', 0)
+            ->sum(DB::raw('total_penjualan - masuk_dp'));
+            
+        $opsHariIni = (float) DB::table('cash_flows')
+            ->where('tipe', 'keluar')
+            ->where('sumber', 'biaya_operasional')
+            ->whereDate('tanggal', $hariIni)
+            ->sum('nominal');
+            
+        $labaBersihHariIni = $pendapatanHariIni - $totalHppHariIni - $admHariIni - $opsHariIni;
 
+        // --- HITUNG HARI KEMARIN ---
         $pendapatanHariKemarin = (float) DB::table('sales')
             ->whereDate('tanggal', $hariKemarin)
             ->sum('total_penjualan');
+            
+        $hppHariKemarinSql = DB::select("
+            SELECT SUM(si.qty * COALESCE(p.harga_beli, 0)) as total_hpp
+            FROM sales s
+            JOIN sale_items si ON s.id = si.sale_id
+            LEFT JOIN products p ON p.id = si.product_id
+            WHERE DATE(s.tanggal) = ?
+        ", [$hariKemarin]);
+        $totalHppHariKemarin = (float) ($hppHariKemarinSql[0]->total_hpp ?? 0);
+        
+        $admHariKemarin = (float) DB::table('sales')
+            ->whereDate('tanggal', $hariKemarin)
+            ->where('channel', '!=', 'UMUM')
+            ->where('masuk_dp', '>', 0)
+            ->sum(DB::raw('total_penjualan - masuk_dp'));
+            
+        $opsHariKemarin = (float) DB::table('cash_flows')
+            ->where('tipe', 'keluar')
+            ->where('sumber', 'biaya_operasional')
+            ->whereDate('tanggal', $hariKemarin)
+            ->sum('nominal');
+            
+        $labaBersihHariKemarin = $pendapatanHariKemarin - $totalHppHariKemarin - $admHariKemarin - $opsHariKemarin;
 
         // 7. Uang di Luar (Piutang) — dari settings
         $piutangSetting = DB::table('settings')->where('key', 'piutang_pembeli')->first();
         $uangDiLuar = (float) ($piutangSetting->value ?? 0);
 
-        // 8. Uang Kas = Rekening + Online bulan ini + Aset - Total Hutang Aktif
-        $uangKas = $uangRekening + $uangOnlineBulanIni + $uangStok - $totalSisaHutang;
+        // 8. Uang Kas = Rekening + Online (Hutang Market) + Aset - Total Hutang Aktif
+        $uangKas = $uangRekening + $uangOnlinePending + $uangStok - $totalSisaHutang;
 
         // 9. Margin 1 Bulan (Pendapatan - HPP - Biaya Operasional bulan ini)
         $pendapatanBulanan = (float) DB::table('sales')
@@ -104,7 +162,14 @@ class LaporanLabaController extends Controller
             ->where('sumber', 'biaya_operasional')
             ->whereBetween('tanggal', [$bulanIni->toDateString(), $bulanIniEnd->toDateString()])
             ->sum('nominal');
-        $marginBulanan = $pendapatanBulanan - $totalHppBulanan - $biayaOperasionalBulanan;
+
+        $admBulanan = (float) DB::table('sales')
+            ->where('channel', '!=', 'UMUM')
+            ->where('masuk_dp', '>', 0)
+            ->whereBetween('tanggal', [$bulanIni->toDateString(), $bulanIniEnd->toDateString()])
+            ->sum(DB::raw('total_penjualan - masuk_dp'));
+
+        $marginBulanan = $pendapatanBulanan - $totalHppBulanan - $biayaOperasionalBulanan - $admBulanan;
 
         // 10. Pemasukan (Hari Ini / Bulan Ini / Tahun Ini / Seluruh)
         $tahunIni = $now->copy()->startOfYear();
@@ -152,7 +217,12 @@ class LaporanLabaController extends Controller
                 ->whereBetween('tanggal', [$mStart->toDateString(), $mEnd->toDateString()])
                 ->sum('nominal');
 
-            $labaBersih = $labaKotor - $keluar;
+            $adm = (float) $salesQuery->clone()
+                ->where('channel', '!=', 'UMUM')
+                ->where('masuk_dp', '>', 0)
+                ->sum(DB::raw('total_penjualan - masuk_dp'));
+
+            $labaBersih = $labaKotor - $keluar - $adm;
 
             $chartData[] = [
                 'bulan' => $bulanNames[$m - 1],
@@ -177,8 +247,9 @@ class LaporanLabaController extends Controller
             ],
             'chart_data' => $chartData,
             'uang_online' => [
-                'bulan_ini' => $uangOnlineBulanIni,
-                'bulan_lalu' => $uangOnlineBulanLalu,
+                'bulan_ini' => $uangOnlinePending,
+                'bulan_lalu' => $omzetOnlineBulanLalu,
+                'omzet_bulan_ini' => $omzetOnlineBulanIni,
             ],
             'uang_rekening' => $uangRekening,
             'hutang' => [
@@ -189,8 +260,8 @@ class LaporanLabaController extends Controller
             'hutang_per_distributor' => $hutangPerDistributor,
             'uang_stok' => $uangStok,
             'pendapatan_harian' => [
-                'hari_ini' => $pendapatanHariIni,
-                'hari_kemarin' => $pendapatanHariKemarin,
+                'hari_ini' => $labaBersihHariIni,
+                'hari_kemarin' => $labaBersihHariKemarin,
             ],
             'uang_kas' => $uangKas,
             'uang_di_luar' => $uangDiLuar,
@@ -198,6 +269,7 @@ class LaporanLabaController extends Controller
                 'pendapatan' => $pendapatanBulanan,
                 'hpp' => $totalHppBulanan,
                 'biaya_operasional' => $biayaOperasionalBulanan,
+                'adm' => $admBulanan,
                 'margin' => $marginBulanan,
             ],
         ]);

@@ -86,4 +86,23 @@ class SettingController extends Controller
             return response()->json(['message' => 'Gagal memulihkan database (file mungkin sedang dikunci sistem). Silakan coba lagi atau restart server. Detail: ' . $e->getMessage()], 500);
         }
     }
+
+    public function fixDatabase()
+    {
+        try {
+            // Run migrations programmatically
+            \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+            $output = \Illuminate\Support\Facades\Artisan::output();
+            
+            return response()->json([
+                'message' => 'Database berhasil disinkronisasi.',
+                'output' => $output
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat memperbaiki database.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

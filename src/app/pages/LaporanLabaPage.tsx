@@ -139,11 +139,11 @@ export default function LaporanLabaPage({ isEmbedded }: { isEmbedded?: boolean }
       {!isEmbedded && (
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-gray-800 tracking-tight flex items-center gap-2">
+            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 tracking-tight flex items-center gap-2">
               <BarChart3 size={22} className="text-blue-500" />
               Laporan Keuangan Toko
             </h2>
-            <p className="text-sm text-gray-500 mt-1">Ringkasan keseluruhan neraca, pemasukan, dan pengeluaran toko</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Ringkasan keseluruhan neraca, pemasukan, dan pengeluaran toko</p>
           </div>
         </div>
       )}
@@ -154,16 +154,16 @@ export default function LaporanLabaPage({ isEmbedded }: { isEmbedded?: boolean }
       <div>
         <div className="flex items-center gap-2 mb-3">
           <div className="w-1 h-5 bg-blue-500 rounded-full"></div>
-          <h3 className="text-sm font-black text-gray-800 uppercase tracking-wider">Posisi Neraca Keuangan</h3>
+          <h3 className="text-sm font-black text-gray-800 dark:text-gray-100 uppercase tracking-wider">Posisi Neraca Keuangan</h3>
           <Wallet size={16} className="text-blue-500" />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
           
           {/* 1. Uang Online */}
           <StatCard
-            title="Uang Online"
+            title="Uang Online (Hutang Market)"
             value={formatRp(data.uang_online.bulan_ini)}
-            subtitle={<span>Bulan lalu: {formatRp(data.uang_online.bulan_lalu)}</span>}
+            subtitle="Dana mengendap belum cair"
             icon={CircleDollarSign}
             colorClass="from-indigo-500 to-indigo-600"
           />
@@ -195,9 +195,9 @@ export default function LaporanLabaPage({ isEmbedded }: { isEmbedded?: boolean }
             colorClass="from-amber-500 to-amber-600"
           />
 
-          {/* 5. Pendapatan Harian */}
+          {/* 5. Laba Bersih Harian */}
           <StatCard
-            title="Pendapatan Harian"
+            title="Laba Bersih Harian"
             value={formatRp(data.pendapatan_harian.hari_ini)}
             subtitle={<span>Kemarin: {formatRp(data.pendapatan_harian.hari_kemarin)}</span>}
             icon={TrendingUp}
@@ -219,7 +219,7 @@ export default function LaporanLabaPage({ isEmbedded }: { isEmbedded?: boolean }
             value={formatRp(data.margin_bulanan.margin)}
             subtitle={
               <span>
-                Margin: {data.margin_bulanan.pendapatan > 0 ? ((data.margin_bulanan.margin / data.margin_bulanan.pendapatan) * 100).toFixed(1) : 0}% (Netto)
+                Omzet - HPP - ADM - Ops ({data.margin_bulanan.pendapatan > 0 ? ((data.margin_bulanan.margin / data.margin_bulanan.pendapatan) * 100).toFixed(1) : 0}%)
               </span>
             }
             icon={Activity}
@@ -272,41 +272,48 @@ export default function LaporanLabaPage({ isEmbedded }: { isEmbedded?: boolean }
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* ═══ SECTION 2: TABEL HUTANG PER DISTRIBUTOR ═══ */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-          <div className="p-4 border-b border-gray-50 flex items-center gap-2 bg-gradient-to-r from-gray-50 to-white">
-            <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-               <CreditCard size={16} className="text-orange-600" />
+        <div className="bg-white dark:bg-slate-800/60 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50 overflow-hidden flex flex-col backdrop-blur-sm">
+          <div className="p-5 border-b border-gray-50 dark:border-slate-700/50 flex items-center justify-between bg-gradient-to-r from-orange-50/50 to-transparent dark:from-orange-500/5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center shadow-inner">
+                 <CreditCard size={20} className="text-orange-600 dark:text-orange-400" />
+              </div>
+              <div>
+                <h3 className="text-[13px] font-black text-gray-800 dark:text-gray-100 uppercase tracking-tight">Detail Pembelian & Hutang</h3>
+                <p className="text-[10px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider">Per Distributor Aktif</p>
+              </div>
             </div>
-            <h3 className="text-sm font-bold text-gray-800">Detail Pembelian & Hutang Per Distributor</h3>
           </div>
           
           {data.hutang_per_distributor.length === 0 ? (
-            <div className="p-8 text-center text-gray-500 text-sm flex-1 flex flex-col justify-center">
+            <div className="p-12 text-center text-gray-500 dark:text-slate-400 text-sm flex-1 flex flex-col justify-center italic">
               Tidak ada hutang aktif pada distributor saat ini.
             </div>
           ) : (
-            <div className="overflow-x-auto flex-1">
-              <table className="w-full">
-                <thead className="bg-gray-50/50">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-[10px] uppercase font-bold text-gray-500 tracking-wider">Nama Distributor</th>
-                    <th className="text-right px-4 py-3 text-[10px] uppercase font-bold text-gray-500 tracking-wider">Total Pembelian</th>
-                    <th className="text-right px-4 py-3 text-[10px] uppercase font-bold text-gray-500 tracking-wider">Sisa Hutang Berjalan</th>
+            <div className="overflow-x-auto flex-1 custom-scrollbar">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-gray-50/50 dark:bg-slate-900/30">
+                    <th className="px-5 py-3 text-[10px] uppercase font-black text-gray-400 dark:text-slate-500 tracking-[0.1em]">Distributor</th>
+                    <th className="px-5 py-3 text-right text-[10px] uppercase font-black text-gray-400 dark:text-slate-500 tracking-[0.1em]">Pembelian</th>
+                    <th className="px-5 py-3 text-right text-[10px] uppercase font-black text-gray-400 dark:text-slate-500 tracking-[0.1em]">Sisa Hutang</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100/50 dark:divide-slate-700/30">
                   {data.hutang_per_distributor.map((dist) => (
-                    <tr key={dist.name} className="hover:bg-blue-50/30 transition-colors">
-                      <td className="px-4 py-3 text-xs font-bold text-gray-800">{dist.name}</td>
-                      <td className="px-4 py-3 text-xs text-right font-medium text-gray-600">
+                    <tr key={dist.name} className="hover:bg-orange-50/20 dark:hover:bg-orange-500/5 transition-colors group">
+                      <td className="px-5 py-4 text-xs font-black text-gray-700 dark:text-gray-200 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">{dist.name}</td>
+                      <td className="px-5 py-4 text-xs text-right font-bold text-gray-500 dark:text-slate-400">
                         {formatRp(Number(dist.total_pembelian))}
                       </td>
-                      <td className="px-4 py-3 text-xs text-right">
-                        <span className="font-bold text-red-600">
-                          {formatRp(Number(dist.sisa_hutang))}
-                        </span>
+                      <td className="px-5 py-4 text-xs text-right">
+                        <div className="bg-rose-50 dark:bg-rose-500/10 px-2 py-1 rounded-lg inline-block border border-rose-100 dark:border-rose-500/20">
+                          <span className="font-black text-rose-600 dark:text-rose-400">
+                            {formatRp(Number(dist.sisa_hutang))}
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -316,18 +323,20 @@ export default function LaporanLabaPage({ isEmbedded }: { isEmbedded?: boolean }
           )}
         </div>
 
-        {/* ═══ SECTION 3: GRAFIK PEMASUKAN VS PENGELUARAN ═══ */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-              <BarChart3 size={16} className="text-blue-600" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-gray-800">Grafik Posisi Keuangan</h3>
-              <p className="text-[10px] text-gray-500 uppercase tracking-wider font-bold">Rekap Keseluruhan Aset & Kewajiban</p>
+        {/* ═══ SECTION 3: GRAFIK POSISI KEUANGAN ═══ */}
+        <div className="bg-white dark:bg-slate-800/60 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700/50 p-6 flex flex-col backdrop-blur-sm">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center shadow-inner">
+                <BarChart3 size={20} className="text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-[13px] font-black text-gray-800 dark:text-gray-100 uppercase tracking-tight">Grafik Posisi Keuangan</h3>
+                <p className="text-[10px] text-gray-400 dark:text-slate-500 font-bold uppercase tracking-wider">Rekap Aset & Kewajiban</p>
+              </div>
             </div>
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-h-[260px]">
             {data.chart_data.length > 0 ? (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart 
@@ -342,16 +351,16 @@ export default function LaporanLabaPage({ isEmbedded }: { isEmbedded?: boolean }
                     { name: 'Hutang', nominal: data.hutang.total_aktif, fill: '#f43f5e' }
                   ].sort((a,b) => b.nominal - a.nominal)} 
                   layout="vertical" 
-                  margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+                  margin={{ top: 0, right: 30, left: 10, bottom: 0 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-                  <XAxis type="number" fontSize={10} tickFormatter={(v) => `${(v / 1000000).toFixed(1)}jt`} tick={{ fill: '#9ca3af' }} />
-                  <YAxis type="category" dataKey="name" fontSize={10} fontWeight={700} width={75} tick={{ fill: '#6b7280' }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" horizontal={false} />
+                  <XAxis type="number" fontSize={10} tickFormatter={(v) => `${(v / 1000000).toFixed(0)}jt`} tick={{ fill: '#9ca3af', fontWeight: 700 }} />
+                  <YAxis type="category" dataKey="name" fontSize={9} fontWeight={900} width={90} tick={{ fill: 'currentColor', className: 'text-gray-400 dark:text-slate-500 uppercase' }} />
                   <Tooltip 
-                    formatter={(value: number) => [`Rp ${value.toLocaleString('id-ID')}`, 'Nominal']}
-                    cursor={{ fill: 'rgba(0,0,0,0.05)' }} 
+                    content={<CustomTooltip />}
+                    cursor={{ fill: 'rgba(0,0,0,0.03)' }} 
                   />
-                  <Bar dataKey="nominal" radius={[0, 4, 4, 0]} barSize={20}>
+                  <Bar dataKey="nominal" radius={[0, 6, 6, 0]} barSize={18}>
                     {[
                       { name: 'Kas Total', nominal: data.uang_kas, fill: '#10b981' },
                       { name: 'Uang Online', nominal: data.uang_online.bulan_ini, fill: '#6366f1' },
@@ -362,20 +371,19 @@ export default function LaporanLabaPage({ isEmbedded }: { isEmbedded?: boolean }
                       { name: 'Piutang', nominal: data.uang_di_luar, fill: '#475569' },
                       { name: 'Hutang', nominal: data.hutang.total_aktif, fill: '#f43f5e' }
                     ].sort((a,b) => b.nominal - a.nominal).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                      <Cell key={`cell-${index}`} fill={entry.fill} className="opacity-80 hover:opacity-100 transition-opacity duration-300" />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-                <Calendar size={20} className="mr-2" /> Belum ada data grafik tahun ini
+              <div className="h-full flex items-center justify-center text-gray-400 dark:text-slate-500 text-xs italic">
+                <Calendar size={16} className="mr-2" /> Belum ada data grafik tahun ini
               </div>
             )}
           </div>
         </div>
       </div>
-
     </div>
   );
 }

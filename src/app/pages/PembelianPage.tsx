@@ -13,12 +13,12 @@ export default function PembelianPage() {
     return (
         <div className="space-y-6">
             {/* Tab Navigation */}
-            <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md rounded-lg shadow-sm border border-gray-100 p-2 inline-flex gap-2">
+            <div className="sticky top-0 z-40 bg-white p-1 rounded-xl shadow-sm border border-gray-100 flex gap-1 w-fit">
                 <button
                     onClick={() => setActiveTab('pembelian')}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-xs transition-colors ${activeTab === 'pembelian'
-                            ? 'bg-[#3B82F6] text-white'
-                            : 'text-gray-600 hover:bg-gray-50'
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'pembelian'
+                            ? 'bg-[#3B82F6] text-white shadow-md'
+                            : 'text-gray-500 hover:bg-gray-50'
                         }`}
                 >
                     <Package size={16} />
@@ -26,9 +26,9 @@ export default function PembelianPage() {
                 </button>
                 <button
                     onClick={() => setActiveTab('distributor')}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-xs transition-colors ${activeTab === 'distributor'
-                            ? 'bg-[#3B82F6] text-white'
-                            : 'text-gray-600 hover:bg-gray-50'
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'distributor'
+                            ? 'bg-[#3B82F6] text-white shadow-md'
+                            : 'text-gray-500 hover:bg-gray-50'
                         }`}
                 >
                     <Users size={16} />
@@ -36,9 +36,9 @@ export default function PembelianPage() {
                 </button>
                 <button
                     onClick={() => setActiveTab('catatan')}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-xs transition-colors ${activeTab === 'catatan'
-                            ? 'bg-[#3B82F6] text-white'
-                            : 'text-gray-600 hover:bg-gray-50'
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'catatan'
+                            ? 'bg-[#3B82F6] text-white shadow-md'
+                            : 'text-gray-500 hover:bg-gray-50'
                         }`}
                 >
                     <FileText size={16} />
@@ -47,9 +47,9 @@ export default function PembelianPage() {
                 {isOwner && (
                     <button
                         onClick={() => setActiveTab('hutang')}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-xs transition-colors ${activeTab === 'hutang'
-                                ? 'bg-[#3B82F6] text-white'
-                                : 'text-gray-600 hover:bg-gray-50'
+                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${activeTab === 'hutang'
+                                ? 'bg-[#3B82F6] text-white shadow-md'
+                                : 'text-gray-500 hover:bg-gray-50'
                             }`}
                     >
                         <CreditCard size={16} />
