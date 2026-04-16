@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Eye, CheckCircle, Download, Search, ChevronLeft, ChevronRight, Trash2, Calendar, Edit2 } from 'lucide-react';
+import { 
+  Plus, Eye, CheckCircle, Download, Search, ChevronLeft, ChevronRight, 
+  Trash2, Calendar, Edit2, Package, AlertCircle, CreditCard, ShoppingBag, DollarSign
+} from 'lucide-react';
 import * as XLSX from 'xlsx';
 import Select from 'react-select';
 import api from '../api';
@@ -39,6 +42,26 @@ interface Purchase {
   status_pembayaran: 'lunas' | 'hutang';
   jatuh_tempo?: string | null;
   items?: PurchaseItem[];
+}
+
+function StatCard({ title, value, subtitle, icon: Icon, colorClass = "from-blue-600 to-blue-700" }: { title: string; value: string; subtitle: React.ReactNode; icon: any; colorClass?: string }) {
+  return (
+    <div className={`bg-gradient-to-br ${colorClass} rounded-2xl shadow-md border-t border-white/20 p-4 hover:shadow-lg transition-all duration-300 group relative overflow-hidden text-white flex flex-col justify-between h-full`}>
+      <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-500">
+        <Icon size={48} strokeWidth={1.5} />
+      </div>
+      <div className="relative z-10">
+        <p className="text-[9px] font-black uppercase tracking-wider opacity-80 mb-1">{title}</p>
+        <p className="text-xl font-black tracking-tight mb-1">{value}</p>
+      </div>
+      <div className="relative z-10 mt-3">
+        <div className="flex items-center gap-1.5 py-1 px-2.5 bg-white/10 rounded-lg w-fit backdrop-blur-sm border border-white/5">
+           <Icon size={10} className="opacity-70 flex-shrink-0" />
+           <p className="text-[9px] font-bold opacity-90">{subtitle}</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function PembelianTab() {
@@ -466,25 +489,35 @@ export default function PembelianTab() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
-          <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">Total Pembelian</p>
-          <p className="text-xl font-bold text-[#3B82F6]">
-            Rp {purchases.reduce((sum, p) => sum + Number(p.total_pembelian), 0).toLocaleString('id-ID')}
-          </p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
-          <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">Sudah Lunas</p>
-          <p className="text-xl font-bold text-green-600">
-            {purchases.filter((p) => p.status_pembayaran === 'lunas').length}
-          </p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
-          <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider mb-0.5">Belum Lunas (Hutang)</p>
-          <p className="text-xl font-bold text-red-600">
-            {purchases.filter((p) => p.status_pembayaran === 'hutang').length}
-          </p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          title="Total Nilai Pembelian"
+          value={`Rp ${purchases.reduce((sum, p) => sum + Number(p.total_pembelian), 0).toLocaleString('id-ID')}`}
+          subtitle="Seluruh riwayat belanja"
+          icon={ShoppingBag}
+          colorClass="from-blue-500 to-blue-600"
+        />
+        <StatCard
+          title="Sudah Lunas"
+          value={purchases.filter((p) => p.status_pembayaran === 'lunas').length.toString()}
+          subtitle="Invoice berhasil dibayar"
+          icon={CheckCircle}
+          colorClass="from-emerald-500 to-emerald-600"
+        />
+        <StatCard
+          title="Invoice Hutang"
+          value={purchases.filter((p) => p.status_pembayaran === 'hutang').length.toString()}
+          subtitle="Belum lunas sepenuhnya"
+          icon={AlertCircle}
+          colorClass="from-orange-500 to-orange-600"
+        />
+        <StatCard
+          title="Total Sisa Hutang"
+          value={`Rp ${purchases.reduce((sum, p) => sum + (Number(p.total_pembelian) - Number(p.terbayar)), 0).toLocaleString('id-ID')}`}
+          subtitle="Kewajiban pembayaran aktif"
+          icon={CreditCard}
+          colorClass="from-rose-500 to-rose-600"
+        />
       </div>
 
       {/* Filter */}
