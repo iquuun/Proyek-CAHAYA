@@ -1341,12 +1341,12 @@ export default function PenjualanPage() {
       {/* FAKTUR TEMPLATE - Continuous Form 21cm x 14.5cm */}
       <div id="print-area" className="faktur-print bg-white text-black font-sans" style={{ width: '100%', margin: '0' }}>
         {lastSale && (
-          <div className="bg-white" style={{ fontSize: '14px', fontWeight: 'normal', fontFamily: '"Courier New", Courier, monospace', lineHeight: '1.2' }}>
+          <div className="bg-white" style={{ fontSize: '14px', fontWeight: 'normal', lineHeight: '1.2' }}>
             {/* ===== HEADER ===== */}
             <table className="w-full border-collapse">
               <tbody>
                 <tr>
-                  <td style={{ width: '65%', verticalAlign: 'top', padding: '0' }}>
+                  <td style={{ width: '60%', verticalAlign: 'top', padding: '0' }}>
                     <div className="flex items-start gap-3">
                       {settings.store_logo && (
                         <img
@@ -1357,13 +1357,13 @@ export default function PenjualanPage() {
                       )}
                       <div>
                         <div style={{ fontSize: '19px', fontWeight: 'bold', textTransform: 'uppercase', lineHeight: '1.1' }}>{settings.store_name || 'CAHAYA KOMPUTER ID'}</div>
-                        <div style={{ fontSize: '13px', marginTop: '2px', fontWeight: 'normal' }}>{settings.store_address || 'Alamat Toko Belum Diatur'}</div>
+                        <div style={{ fontSize: '13px', marginTop: '2px', fontWeight: 'normal', whiteSpace: 'nowrap' }}>{settings.store_address || 'Alamat Toko Belum Diatur'}</div>
                         <div style={{ fontSize: '13px', fontWeight: 'normal' }}>Telepon/HP : {settings.store_phone || '-'}</div>
                       </div>
                     </div>
                   </td>
-                  <td style={{ width: '35%', verticalAlign: 'bottom', textAlign: 'right', padding: '0', paddingBottom: '2px' }}>
-                    <div style={{ fontSize: '26px', fontWeight: 'bold', textTransform: 'uppercase', lineHeight: '1.1', display: 'inline-block' }}>FAKTUR PENJUALAN</div>
+                  <td style={{ width: '40%', verticalAlign: 'bottom', textAlign: 'right', padding: '0', paddingBottom: '2px' }}>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', textTransform: 'uppercase', lineHeight: '1.1', display: 'inline-block', whiteSpace: 'nowrap' }}>FAKTUR PENJUALAN</div>
                   </td>
                 </tr>
               </tbody>
@@ -1373,7 +1373,7 @@ export default function PenjualanPage() {
             <table className="w-full border-collapse" style={{ fontSize: '13px', marginTop: '4px' }}>
               <tbody>
                 <tr>
-                  <td style={{ width: '65%', verticalAlign: 'top', padding: '0' }}>
+                  <td style={{ width: '60%', verticalAlign: 'top', padding: '0' }}>
                     <div>
                       <div style={{ marginBottom: '2px' }}>
                         <div>Kepada Yth. :</div>
@@ -1387,13 +1387,13 @@ export default function PenjualanPage() {
                       </table>
                     </div>
                   </td>
-                  <td style={{ width: '35%', verticalAlign: 'top', padding: '0' }}>
+                  <td style={{ width: '40%', verticalAlign: 'top', padding: '0' }}>
                     <table className="w-full border-collapse" style={{ fontSize: '13px', textAlign: 'left', lineHeight: '1.2' }}>
                       <tbody>
-                        <tr><td style={{ width: '110px' }}>Tanggal / Jam</td><td style={{ width: '10px' }}>:</td><td>{new Date(lastSale.tanggal).toLocaleDateString('id-ID')} {new Date(lastSale.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td></tr>
-                        <tr><td>No. Faktur</td><td>:</td><td className="uppercase">{lastSale.invoice}</td></tr>
-                        <tr><td>Kasir</td><td>:</td><td className="uppercase">{lastSale.user?.name || user?.name || 'ADMIN'}</td></tr>
-                        <tr><td>Pemesanan</td><td>:</td><td className="uppercase">{lastSale.channel}</td></tr>
+                        <tr><td style={{ width: '90px' }}>Tanggal/Jam</td><td style={{ width: '10px' }}>:</td><td style={{ whiteSpace: 'nowrap' }}>{new Date(lastSale.tanggal).toLocaleDateString('id-ID')} {new Date(lastSale.tanggal).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td></tr>
+                        <tr><td>No. Faktur</td><td>:</td><td className="uppercase" style={{ whiteSpace: 'nowrap' }}>{lastSale.invoice}</td></tr>
+                        <tr><td>Kasir</td><td>:</td><td className="uppercase" style={{ whiteSpace: 'nowrap' }}>{lastSale.user?.name || user?.name || 'ADMIN'}</td></tr>
+                        <tr><td>Pemesanan</td><td>:</td><td className="uppercase" style={{ whiteSpace: 'nowrap' }}>{lastSale.channel}</td></tr>
                       </tbody>
                     </table>
                   </td>
@@ -1443,42 +1443,38 @@ export default function PenjualanPage() {
             {/* Line */}
             <div style={{ borderBottom: '1.5px solid black', margin: '3px 0' }}></div>
 
-            {/* Keterangan + Totals */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: '4px' }}>
-              <div style={{ width: '50%', fontSize: '13px' }}>
-                <div>Keterangan:</div>
-                <div style={{ whiteSpace: 'pre-line', lineHeight: '1.2', marginTop: '2px' }}>
-                  {settings.store_notes || 'Terima kasih atas kepercayaan Anda.\nMohon simpan Faktur ini sebagai bukti transaksi.'}
+            {/* Totals & Signature */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', marginTop: '4px' }}>
+              <div style={{ width: '55%', fontSize: '13px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                
+                {/* Signature Section - Placed on the bottom left aligned with the totals end */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginTop: '10px' }}>
+                  <div style={{ textAlign: 'center', width: '48%' }}>
+                    <p>Hormat Kami,</p>
+                    <div style={{ marginTop: '25px', textDecoration: 'underline', textTransform: 'uppercase' }}>{settings.store_name || 'Cahaya Komputer'}</div>
+                  </div>
+                  <div style={{ textAlign: 'center', width: '48%' }}>
+                    <p>Diterima Oleh,</p>
+                    <div style={{ marginTop: '25px' }}>___________________</div>
+                  </div>
                 </div>
-                <div style={{ marginTop: '6px' }}>Berlaku Untuk Claim Garansi</div>
               </div>
 
-              <div style={{ width: '45%', fontSize: '14px' }}>
-                <table className="w-full border-collapse" style={{ lineHeight: '1' }}>
+              <div style={{ width: '40%', fontSize: '14px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+                <table className="w-full border-collapse" style={{ lineHeight: '1.15' }}>
                   <tbody>
                     <tr><td style={{ padding: '0', textAlign: 'left' }}>Subtotal :</td><td style={{ textAlign: 'right' }}>{Number(lastSale?.total_penjualan || 0).toLocaleString('id-ID')}</td></tr>
-                    <tr><td style={{ padding: '0', textAlign: 'left' }}>Pajak ({lastSale?.tax_percent || 0}%) :</td><td style={{ textAlign: 'right' }}>{Number(lastSale?.tax_amount || 0).toLocaleString('id-ID')}</td></tr>
+                    <tr><td style={{ padding: '0 0 3px 0', textAlign: 'left' }}>Pajak ({lastSale?.tax_percent || 0}%) :</td><td style={{ padding: '0 0 3px 0', textAlign: 'right' }}>{Number(lastSale?.tax_amount || 0).toLocaleString('id-ID')}</td></tr>
                     <tr style={{ borderTop: '1.5px solid black' }}>
-                      <td style={{ padding: '1px 0 0 0', textAlign: 'left', fontSize: '15px' }}>Total :</td>
-                      <td style={{ padding: '1px 0 0 0', textAlign: 'right', fontSize: '15px', fontWeight: 'bold' }}>{Number(lastSale?.total_penjualan || 0).toLocaleString('id-ID')}</td>
+                      <td style={{ padding: '4px 0 0 0', textAlign: 'left', fontSize: '15px', fontWeight: 'bold' }}>Total :</td>
+                      <td style={{ padding: '4px 0 0 0', textAlign: 'right', fontSize: '15px', fontWeight: 'bold' }}>{Number(lastSale?.total_penjualan || 0).toLocaleString('id-ID')}</td>
                     </tr>
-                    <tr><td style={{ padding: '0', textAlign: 'left' }}>Tunai :</td><td style={{ textAlign: 'right' }}>{Number(lastSale?.pembayaran || 0).toLocaleString('id-ID')}</td></tr>
+                    <tr><td style={{ padding: '1px 0 0 0', textAlign: 'left' }}>Tunai :</td><td style={{ padding: '1px 0 0 0', textAlign: 'right' }}>{Number(lastSale?.pembayaran || 0).toLocaleString('id-ID')}</td></tr>
                     {lastSale?.status_bayar === 'dp' && (
-                      <tr><td style={{ padding: '1px 0 0 0', textAlign: 'left', fontWeight: 'bold' }}>Sisa (DP) :</td><td style={{ padding: '1px 0 0 0', textAlign: 'right', fontWeight: 'bold', borderTop: '1px solid black' }}>{Number(lastSale?.sisa_bayar || 0).toLocaleString('id-ID')}</td></tr>
+                      <tr><td style={{ padding: '2px 0 0 0', textAlign: 'left', fontWeight: 'bold' }}>Sisa (DP) :</td><td style={{ padding: '2px 0 0 0', textAlign: 'right', fontWeight: 'bold', borderTop: '1px solid black' }}>{Number(lastSale?.sisa_bayar || 0).toLocaleString('id-ID')}</td></tr>
                     )}
                   </tbody>
                 </table>
-              </div>
-            </div>
-            {/* Signature Section */}
-            <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-              <div style={{ textAlign: 'center', width: '160px' }}>
-                <p>Hormat Kami,</p>
-                <div style={{ marginTop: '40px', textDecoration: 'underline', textTransform: 'uppercase' }}>{settings.store_name || 'Cahaya Komputer'}</div>
-              </div>
-              <div style={{ textAlign: 'center', width: '160px' }}>
-                <p>Diterima Oleh,</p>
-                <div style={{ marginTop: '40px' }}>___________________</div>
               </div>
             </div>
           </div>
@@ -1489,6 +1485,8 @@ export default function PenjualanPage() {
         .faktur-print { display: none; }
 
         @media print {
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
           html, body { 
             visibility: hidden !important; 
             margin: 0 !important; 
@@ -1517,10 +1515,9 @@ export default function PenjualanPage() {
             color: #000 !important;
             border-color: #000 !important;
             background: transparent !important;
-            font-family: "Draft", "Epson Draft", "Epson Roman", "Courier New", Courier, monospace !important;
-            font-weight: bold !important;
-            -webkit-font-smoothing: none !important;
-            text-rendering: optimizeSpeed !important;
+            font-family: 'Tahoma', 'Verdana', 'Segoe UI', sans-serif !important;
+            -webkit-font-smoothing: antialiased !important;
+            text-rendering: optimizeLegibility !important;
           }
 
           @page {

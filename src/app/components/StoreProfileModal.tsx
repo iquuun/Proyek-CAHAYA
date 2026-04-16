@@ -12,7 +12,6 @@ export default function StoreProfileModal({ isOpen, onClose }: StoreProfileModal
     const [storeName, setStoreName] = useState('');
     const [storeAddress, setStoreAddress] = useState('');
     const [storePhone, setStorePhone] = useState('');
-    const [storeNotes, setStoreNotes] = useState('');
     const [invoiceStartNumber, setInvoiceStartNumber] = useState('10000');
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -32,7 +31,6 @@ export default function StoreProfileModal({ isOpen, onClose }: StoreProfileModal
             setStoreName(res.data.store_name || '');
             setStoreAddress(res.data.store_address || '');
             setStorePhone(res.data.store_phone || '');
-            setStoreNotes(res.data.store_notes || '');
             setInvoiceStartNumber(res.data.invoice_start_number || '10000');
             if (res.data.store_logo) {
                 const host = window.location.hostname === 'localhost' ? '127.0.0.1' : window.location.hostname;
@@ -61,7 +59,6 @@ export default function StoreProfileModal({ isOpen, onClose }: StoreProfileModal
             formData.append('store_name', storeName);
             formData.append('store_address', storeAddress);
             formData.append('store_phone', storePhone);
-            formData.append('store_notes', storeNotes);
             formData.append('invoice_start_number', invoiceStartNumber);
             if (logoFile) {
                 formData.append('store_logo', logoFile);
@@ -177,15 +174,6 @@ export default function StoreProfileModal({ isOpen, onClose }: StoreProfileModal
                                     />
                                 </div>
 
-                                <div className="space-y-1">
-                                    <label className="block text-[10px] font-bold text-gray-500 uppercase">Catatan Faktur (Notes)</label>
-                                    <textarea
-                                        value={storeNotes}
-                                        onChange={(e) => setStoreNotes(e.target.value)}
-                                        rows={3}
-                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none transition-all resize-none text-sm"
-                                    />
-                                </div>
                             </div>
                         </div>
                     )}
