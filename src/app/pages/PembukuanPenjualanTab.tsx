@@ -67,14 +67,24 @@ export default function PembukuanPenjualanTab() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [dateRange, setDateRange] = useState(() => {
     const today = new Date();
-    const start = new Date();
-    start.setMonth(today.getMonth() - 1);
+    // Default: Bulan Ini (1 s/d Akhir Bulan)
+    const start = new Date(today.getFullYear(), today.getMonth(), 1);
+    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    const toDateString = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     return {
       preset: 'month', // today, yesterday, week, month, 3month, all, custom
-      start: start.toISOString().split('T')[0],
-      end: today.toISOString().split('T')[0]
+      start: toDateString(start),
+      end: toDateString(end)
     };
   });
+
   const applyPreset = (preset: string) => {
     const today = new Date();
     let start = new Date();
@@ -88,17 +98,26 @@ export default function PembukuanPenjualanTab() {
     } else if (preset === 'week') {
       start.setDate(today.getDate() - 7);
     } else if (preset === 'month') {
-      start.setMonth(today.getMonth() - 1);
+      // Bulan Ini (1 s/d Akhir Bulan)
+      start = new Date(today.getFullYear(), today.getMonth(), 1);
+      end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     } else if (preset === '3month') {
       start.setMonth(today.getMonth() - 3);
     } else if (preset === 'all') {
       start = new Date('2020-01-01');
     }
     
+    const toDateString = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     setDateRange({
       preset,
-      start: start.toISOString().split('T')[0],
-      end: end.toISOString().split('T')[0]
+      start: toDateString(start),
+      end: toDateString(end)
     });
     if (preset !== 'custom') setShowDatePicker(false);
   };
@@ -367,7 +386,7 @@ export default function PembukuanPenjualanTab() {
                     { id: 'today', label: 'Hari Ini' },
                     { id: 'yesterday', label: 'Kemarin' },
                     { id: 'week', label: '1 Minggu Terakhir' },
-                    { id: 'month', label: '1 Bulan Terakhir' },
+                    { id: 'month', label: 'Bulan Ini' },
                     { id: '3month', label: '3 Bulan Terakhir' },
                     { id: 'all', label: 'Semua Waktu' },
                     { id: 'custom', label: 'Pilih Sendiri' },

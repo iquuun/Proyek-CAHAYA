@@ -1377,7 +1377,7 @@ export default function PenjualanPage() {
                     <div>
                       <div style={{ marginBottom: '2px' }}>
                         <div>Kepada Yth. :</div>
-                        <div style={{ fontSize: '15px', textTransform: 'uppercase', fontWeight: 'bold', marginTop: '1px' }}>{lastSale.username_pembeli || 'UMUM'}</div>
+                        <div style={{ fontSize: '14px', textTransform: 'uppercase', fontWeight: '600', marginTop: '1px' }}>{lastSale.username_pembeli || 'UMUM'}</div>
                       </div>
                       <table className="border-collapse" style={{ fontSize: '13px', marginTop: '1px' }}>
                         <tbody>
@@ -1402,7 +1402,7 @@ export default function PenjualanPage() {
             </table>
 
             {/* Items Table */}
-            <table className="w-full border-collapse" style={{ fontSize: '14px', tableLayout: 'fixed', marginTop: '4px' }}>
+            <table className="w-full border-collapse" style={{ fontSize: '12px', tableLayout: 'fixed', marginTop: '4px' }}>
               <thead>
                 <tr style={{ borderTop: '1.5px solid black', borderBottom: '1.5px solid black' }}>
                   <th style={{ padding: '3px 2px', textAlign: 'center', width: '30px' }}>No.</th>
@@ -1504,7 +1504,7 @@ export default function PenjualanPage() {
             top: 0 !important;
             width: 21cm !important;
             margin: 0 !important;
-            padding: 7mm 5mm 2mm 5mm !important;
+            padding: 7mm 5mm 2mm 4mm !important;
             height: auto !important;
             background: white !important;
             box-sizing: border-box !important;
