@@ -15,6 +15,8 @@ export default function StoreProfileModal({ isOpen, onClose }: StoreProfileModal
     const [invoiceStartNumber, setInvoiceStartNumber] = useState('10000');
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [logoFile, setLogoFile] = useState<File | null>(null);
+    const [storeBankAccounts, setStoreBankAccounts] = useState('');
+    const [storeBankAccountName, setStoreBankAccountName] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -32,6 +34,8 @@ export default function StoreProfileModal({ isOpen, onClose }: StoreProfileModal
             setStoreAddress(res.data.store_address || '');
             setStorePhone(res.data.store_phone || '');
             setInvoiceStartNumber(res.data.invoice_start_number || '10000');
+            setStoreBankAccounts(res.data.store_bank_accounts || '');
+            setStoreBankAccountName(res.data.store_bank_account_name || '');
             if (res.data.store_logo) {
                 const host = window.location.hostname === 'localhost' ? '127.0.0.1' : window.location.hostname;
                 const publicBase = `http://${host}:8000`;
@@ -60,6 +64,8 @@ export default function StoreProfileModal({ isOpen, onClose }: StoreProfileModal
             formData.append('store_address', storeAddress);
             formData.append('store_phone', storePhone);
             formData.append('invoice_start_number', invoiceStartNumber);
+            formData.append('store_bank_accounts', storeBankAccounts);
+            formData.append('store_bank_account_name', storeBankAccountName);
             if (logoFile) {
                 formData.append('store_logo', logoFile);
             }
@@ -157,6 +163,29 @@ export default function StoreProfileModal({ isOpen, onClose }: StoreProfileModal
                                             type="number"
                                             value={invoiceStartNumber}
                                             onChange={(e) => setInvoiceStartNumber(e.target.value)}
+                                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none transition-all text-sm"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="block text-[10px] font-bold text-gray-500 uppercase">Rekening Bank</label>
+                                        <input
+                                            type="text"
+                                            value={storeBankAccounts}
+                                            onChange={(e) => setStoreBankAccounts(e.target.value)}
+                                            placeholder="Cth: BCA 123456"
+                                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none transition-all text-sm"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="block text-[10px] font-bold text-gray-500 uppercase">Atas Nama (a.n)</label>
+                                        <input
+                                            type="text"
+                                            value={storeBankAccountName}
+                                            onChange={(e) => setStoreBankAccountName(e.target.value)}
+                                            placeholder="Cth: Syahrul Sidik"
                                             className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#3B82F6] outline-none transition-all text-sm"
                                         />
                                     </div>

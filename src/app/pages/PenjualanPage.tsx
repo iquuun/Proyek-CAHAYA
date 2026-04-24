@@ -1662,17 +1662,24 @@ export default function PenjualanPage() {
             {/* Line */}
             <div style={{ borderBottom: '1.5px solid black', margin: '3px 0' }}></div>
 
+            {/* Info Pembayaran */}
+            {settings.store_bank_accounts && (
+              <div style={{ fontSize: '10px', marginTop: '2px', marginBottom: '2px', color: '#000' }}>
+                 PEMBAYARAN: {settings.store_bank_accounts}
+                 {settings.store_bank_account_name && (
+                    (settings.store_bank_accounts.includes(',') || settings.store_bank_accounts.includes('|'))
+                      ? <div style={{ marginTop: '1px' }}>a.n {settings.store_bank_account_name}</div>
+                      : <span> a.n {settings.store_bank_account_name}</span>
+                 )}
+              </div>
+            )}
+
             {/* Totals & Signature */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', marginTop: '4px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'stretch', marginTop: '2px' }}>
               <div style={{ width: '55%', fontSize: '13px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
                 
-                {/* Nominal in words (Terbilang) */}
-                <div style={{ fontSize: '11px', fontStyle: 'italic', marginBottom: '2px', color: '#000', fontWeight: 'normal' }}>
-                   {formatTerbilang(lastSale?.total_penjualan || 0)}
-                </div>
-
                 {/* Signature Section - Placed on the bottom left aligned with the totals end */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginTop: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
                   <div style={{ textAlign: 'center', width: '48%' }}>
                     <p>Hormat Kami,</p>
                     <div style={{ marginTop: '25px', textDecoration: 'underline', textTransform: 'uppercase' }}>{settings.store_name || 'Cahaya Komputer'}</div>
