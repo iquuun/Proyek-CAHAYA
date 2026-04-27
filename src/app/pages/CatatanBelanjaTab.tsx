@@ -240,8 +240,14 @@ export default function CatatanBelanjaTab() {
     }
   };
 
-  const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchProduct.toLowerCase())).slice(0, 50);
-  const filteredBundleProducts = products.filter(p => p.name.toLowerCase().includes(searchBundle.toLowerCase())).slice(0, 20);
+  const filteredProducts = products
+    .filter(p => p.name.toLowerCase().includes(searchProduct.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, 50);
+  const filteredBundleProducts = products
+    .filter(p => p.name.toLowerCase().includes(searchBundle.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, 20);
 
   // Parse current note for the interactive list
   const parsedNoteLines = parseLines(note);

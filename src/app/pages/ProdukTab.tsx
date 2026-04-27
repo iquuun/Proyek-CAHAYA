@@ -288,7 +288,7 @@ export default function ProdukTab() {
       const matchSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchCategory = selectedCategory === 'all' || product.category?.name === selectedCategory;
       return matchSearch && matchCategory;
-    });
+    }).sort((a, b) => a.name.localeCompare(b.name));
   }, [products, searchTerm, selectedCategory]);
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;

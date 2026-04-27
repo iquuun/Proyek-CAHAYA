@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { 
   Plus, Eye, CheckCircle, Download, Search, ChevronLeft, ChevronRight, 
   Trash2, Calendar, Edit2, Package, AlertCircle, CreditCard, ShoppingBag, DollarSign,
-  Check, X
+  Check, X, Minus
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import Select from 'react-select';
@@ -828,7 +828,7 @@ export default function PembelianTab() {
                       <div className="flex gap-2 items-center bg-gray-50/80 px-2 py-1.5 border-b border-gray-200 sticky top-0 z-10 backdrop-blur-sm">
                         <div className="w-5 text-center text-[10px] font-bold text-gray-500 uppercase tracking-wider">No</div>
                         <div className="flex-1 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Produk</div>
-                        <div className="w-16 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center">Qty</div>
+                        <div className="w-24 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center">Qty</div>
                         <div className="w-28 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Harga Satuan</div>
                         <div className="w-6"></div>
                       </div>
@@ -878,14 +878,28 @@ export default function PembelianTab() {
                                   <Plus size={14} />
                                 </button>
                             </div>
-                            <div className="w-16">
+                            <div className="w-24 flex items-center">
+                              <button
+                                type="button"
+                                onClick={() => handleItemChange(idx, 'qty', Math.max(1, parseNumber(item.qty) - 1).toString())}
+                                className="w-7 h-[28px] bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-l flex items-center justify-center transition-colors active:scale-95"
+                              >
+                                <Minus size={12} />
+                              </button>
                               <input
                                 type="text"
                                 required
                                 value={formatNumber(item.qty)}
                                 onChange={(e) => handleItemChange(idx, 'qty', parseNumber(e.target.value).toString())}
-                                className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs h-[28px] text-center"
+                                className="w-10 px-1 py-1 border-y border-gray-300 focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs h-[28px] text-center"
                               />
+                              <button
+                                type="button"
+                                onClick={() => handleItemChange(idx, 'qty', (parseNumber(item.qty) + 1).toString())}
+                                className="w-7 h-[28px] bg-green-50 hover:bg-green-100 text-green-600 border border-green-200 rounded-r flex items-center justify-center transition-colors active:scale-95"
+                              >
+                                <Plus size={12} />
+                              </button>
                             </div>
                             <div className="w-28">
                               <input
