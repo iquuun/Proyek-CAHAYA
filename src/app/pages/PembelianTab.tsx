@@ -888,7 +888,6 @@ export default function PembelianTab() {
                               </button>
                               <input
                                 type="text"
-                                required
                                 value={formatNumber(item.qty)}
                                 onChange={(e) => handleItemChange(idx, 'qty', parseNumber(e.target.value).toString())}
                                 className="w-10 px-1 py-1 border-y border-gray-300 focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs h-[28px] text-center"
@@ -904,7 +903,6 @@ export default function PembelianTab() {
                             <div className="w-28">
                               <input
                                 type="text"
-                                required
                                 value={formatNumber(item.harga_beli)}
                                 onChange={(e) => handleItemChange(idx, 'harga_beli', parseNumber(e.target.value).toString())}
                                 className="w-full px-2 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs h-[28px] text-right"
@@ -930,7 +928,6 @@ export default function PembelianTab() {
                     <label className="block text-xs font-medium text-gray-700 mb-1">Total Pembelian (Rp)</label>
                     <input
                       type="text"
-                      required
                       value={formatNumber(formData.total_pembelian)}
                       onChange={(e) => setFormData({ ...formData, total_pembelian: parseNumber(e.target.value).toString() })}
                       className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg focus:ring-1 text-xs font-medium bg-gray-50 focus:ring-[#3B82F6] outline-none bg-gray-50"
@@ -940,7 +937,6 @@ export default function PembelianTab() {
                     <label className="block text-xs font-medium text-gray-700 mb-1">Jumlah Terbayar (Rp)</label>
                     <input
                       type="text"
-                      required
                       value={formatNumber(formData.terbayar)}
                       onChange={(e) => setFormData({ ...formData, terbayar: parseNumber(e.target.value).toString() })}
                       className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg focus:ring-1 text-xs font-medium bg-gray-50 focus:ring-[#3B82F6] outline-none"
