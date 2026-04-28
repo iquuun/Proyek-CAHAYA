@@ -828,7 +828,7 @@ export default function KalkulatorPage() {
                                                     className="flex-1 text-[11px] border border-gray-200 px-2 py-1 rounded outline-none focus:ring-1 focus:ring-blue-400" 
                                                     placeholder="Kategori"
                                                 />
-                                                <div className="relative w-20">
+                                                <div className="relative w-24">
                                                     <input 
                                                         type="number" 
                                                         min="0"
@@ -840,9 +840,9 @@ export default function KalkulatorPage() {
                                                             newly[sIndex].categories[cIndex].adminPercent = val;
                                                             setStoreConfigs(newly);
                                                         }}
-                                                        className="w-full text-[11px] border border-gray-200 rounded px-2 py-1 pr-6 outline-none focus:ring-1 focus:ring-blue-400 font-bold" 
+                                                        className="w-full text-[11px] border border-gray-200 rounded px-2 py-1 pr-6 outline-none focus:ring-1 focus:ring-blue-400 font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
                                                     />
-                                                    <span className="absolute right-2 top-1 text-[9px] text-gray-400">%</span>
+                                                    <span className="absolute right-2 top-1.5 text-[9px] text-gray-400">%</span>
                                                 </div>
                                                 <button onClick={() => {
                                                     const newly = [...storeConfigs];
