@@ -39,6 +39,23 @@ interface RakitanItem {
     modal: number;
 }
 
+const DEFAULT_RAKITAN_LAYOUT: RakitanItem[] = [
+    { id: '1', kategori: 'PROC', nama: '', qty: 1, modal: 0 },
+    { id: '2', kategori: 'MOBO', nama: '', qty: 1, modal: 0 },
+    { id: '3', kategori: 'CPU COOLER', nama: '', qty: 1, modal: 0 },
+    { id: '4', kategori: 'RAM', nama: '', qty: 1, modal: 0 },
+    { id: '5', kategori: 'VGA', nama: '', qty: 1, modal: 0 },
+    { id: '6', kategori: 'SSD', nama: '', qty: 1, modal: 0 },
+    { id: '7', kategori: 'HDD', nama: '', qty: 1, modal: 0 },
+    { id: '8', kategori: 'PSU', nama: '', qty: 1, modal: 0 },
+    { id: '9', kategori: 'CASING', nama: '', qty: 1, modal: 0 },
+    { id: '10', kategori: '', nama: '', qty: 1, modal: 0 },
+    { id: '11', kategori: '', nama: '', qty: 1, modal: 0 },
+    { id: '12', kategori: '', nama: '', qty: 1, modal: 0 },
+    { id: '13', kategori: '', nama: '', qty: 1, modal: 0 },
+    { id: '14', kategori: '', nama: '', qty: 1, modal: 0 },
+];
+
 const DEFAULT_STORES: StoreConfig[] = [
     {
         id: "shopee_cahaya_id", name: "Shopee Cahaya Komputer ID", categories: [
@@ -133,11 +150,7 @@ export default function KalkulatorPage() {
     const [rakitanItems, setRakitanItems] = useState<RakitanItem[]>(() => {
         const saved = localStorage.getItem('kalkulator_rakitan_state');
         if (saved) return JSON.parse(saved);
-        return [
-            { id: '1', kategori: 'PROSESOR', nama: '', qty: 1, modal: 0 },
-            { id: '2', kategori: 'MOTHERBOARD', nama: '', qty: 1, modal: 0 },
-            { id: '3', kategori: 'RAM', nama: '', qty: 1, modal: 0 },
-        ];
+        return JSON.parse(JSON.stringify(DEFAULT_RAKITAN_LAYOUT));
     });
     
     // Satuan local storage
@@ -164,10 +177,7 @@ export default function KalkulatorPage() {
             title: 'Kosongkan Komponen?',
             desc: 'Anda yakin ingin mereset seluruh racikan barang dan meja hitung ke titik nol?',
             onConfirm: () => {
-                setRakitanItems([
-                    { id: '1', kategori: 'PROSESOR', nama: '', qty: 1, modal: 0 },
-                    { id: '2', kategori: 'MOTHERBOARD', nama: '', qty: 1, modal: 0 },
-                ]);
+                setRakitanItems(JSON.parse(JSON.stringify(DEFAULT_RAKITAN_LAYOUT)));
                 setPackingRakitan(25000);
                 setMarginRakitan(500000);
                 toast.success("Daftar Rakitan dibersihkan.");
@@ -575,6 +585,9 @@ export default function KalkulatorPage() {
                                                 >
                                                     <option value="">-- Kat --</option>
                                                     {dbCategories.map(c => <option key={c} value={c?.toUpperCase()}>{c?.toUpperCase()}</option>)}
+                                                    {item.kategori && item.kategori !== 'CUSTOM' && !dbCategories.some(c => c?.toUpperCase() === item.kategori) && (
+                                                        <option value={item.kategori}>{item.kategori}</option>
+                                                    )}
                                                     <option value="CUSTOM">Manual</option>
                                                 </select>
                                             </div>
