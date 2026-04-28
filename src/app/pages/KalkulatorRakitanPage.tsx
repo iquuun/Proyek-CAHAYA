@@ -49,11 +49,6 @@ const DEFAULT_RAKITAN_LAYOUT: RakitanItem[] = [
     { id: '7', kategori: 'HDD', nama: '', qty: 1, modal: 0 },
     { id: '8', kategori: 'PSU', nama: '', qty: 1, modal: 0 },
     { id: '9', kategori: 'CASING', nama: '', qty: 1, modal: 0 },
-    { id: '10', kategori: '', nama: '', qty: 1, modal: 0 },
-    { id: '11', kategori: '', nama: '', qty: 1, modal: 0 },
-    { id: '12', kategori: '', nama: '', qty: 1, modal: 0 },
-    { id: '13', kategori: '', nama: '', qty: 1, modal: 0 },
-    { id: '14', kategori: '', nama: '', qty: 1, modal: 0 },
 ];
 
 const DEFAULT_STORES: StoreConfig[] = [
@@ -560,8 +555,9 @@ export default function KalkulatorPage() {
                             </h3>
                             
                             <div className="flex gap-2 px-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
-                                <div className="w-[18%] md:w-[15%]">Kategori</div>
-                                <div className="w-[50%] md:w-[50%]">Nama Komponen</div>
+                                <div className="w-5 text-center">No</div>
+                                <div className="w-[15%] md:w-[15%]">Kategori</div>
+                                <div className="w-[45%] md:w-[47%]">Nama Komponen</div>
                                 <div className="w-[12%] md:w-[10%] text-center">Qty</div>
                                 <div className="flex-1 text-right">Modal / Pcs</div>
                             </div>
@@ -572,7 +568,10 @@ export default function KalkulatorPage() {
 
                                     return (
                                         <div key={item.id} className="flex items-center gap-2 bg-gray-50 border border-gray-200 p-1.5 rounded-lg relative group" style={{ zIndex: rakitanItems.length - idx }}>
-                                            <div className="w-[18%] md:w-[15%]">
+                                            <div className="w-5 text-[10px] font-bold text-gray-400 text-center flex-shrink-0">
+                                                {idx + 1}
+                                            </div>
+                                            <div className="w-[15%] md:w-[15%]">
                                                 <select 
                                                     value={item.kategori} 
                                                     onChange={(e) => { 
@@ -592,7 +591,7 @@ export default function KalkulatorPage() {
                                                 </select>
                                             </div>
 
-                                            <div className="w-[50%] md:w-[50%]">
+                                            <div className="w-[45%] md:w-[47%]">
                                                 {item.kategori === 'CUSTOM' ? (
                                                     <input 
                                                         type="text" 
@@ -713,14 +712,16 @@ export default function KalkulatorPage() {
                             <table className="w-full text-left border-collapse font-sans">
                                 <thead>
                                     <tr className="border-y-[3px] border-black bg-gray-50">
-                                        <th className="py-3 px-2 text-xs font-black uppercase text-gray-800 w-1/3">Kategori</th>
+                                        <th className="py-3 px-2 text-xs font-black uppercase text-gray-800 w-8 text-center">No</th>
+                                        <th className="py-3 px-2 text-xs font-black uppercase text-gray-800 w-1/4">Kategori</th>
                                         <th className="py-3 px-2 text-xs font-black uppercase text-gray-800">Nama Barang</th>
                                         <th className="py-3 px-2 text-xs font-black uppercase text-gray-800 text-center w-16">QTY</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-dashed divide-gray-200">
-                                    {rakitanItems.map(item => (
+                                    {rakitanItems.map((item, idx) => (
                                         <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
+                                            <td className="py-2.5 px-2 text-xs font-bold text-gray-400 text-center">{idx + 1}</td>
                                             <td className="py-2.5 px-2 text-xs font-bold text-gray-600 uppercase">{item.kategori}</td>
                                             <td className="py-2.5 px-2 text-sm font-medium text-gray-900">{item.nama}</td>
                                             <td className="py-2.5 px-2 text-sm font-bold text-gray-900 text-center">{item.qty}x</td>
