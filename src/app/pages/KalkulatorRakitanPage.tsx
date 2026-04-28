@@ -702,59 +702,52 @@ export default function KalkulatorPage() {
                             </div>
                         )}
                         
-                        <div className="bg-white p-6 pb-6">
-                            <div className="text-center mb-6">
-                                <h2 className="text-xl md:text-2xl font-black text-gray-900 uppercase tracking-widest border-b-[3px] border-black pb-2 inline-block">KALKULATOR RAKITAN BARANG</h2>
-                                <p className="text-xs font-medium text-gray-500 mt-1">Spesifikasi Detail PC Anda</p>
+                        <div className="bg-white px-5 pt-4 pb-5">
+                            <div className="text-center mb-3">
+                                <h2 className="text-lg md:text-xl font-black text-gray-900 uppercase tracking-widest border-b-2 border-black pb-1.5 inline-block">KALKULATOR RAKITAN BARANG</h2>
+                                <p className="text-[10px] font-medium text-gray-400 mt-0.5">Spesifikasi Detail PC Anda</p>
                             </div>
                             
-                            {/* Simple 3 Column Table for Customer */}
+                            {/* Compact Table for Customer */}
                             <table className="w-full text-left border-collapse font-sans">
                                 <thead>
-                                    <tr className="border-y-[3px] border-black bg-gray-50">
-                                        <th className="py-3 px-2 text-xs font-black uppercase text-gray-800 w-8 text-center">No</th>
-                                        <th className="py-3 px-2 text-xs font-black uppercase text-gray-800 w-1/4">Kategori</th>
-                                        <th className="py-3 px-2 text-xs font-black uppercase text-gray-800">Nama Barang</th>
-                                        <th className="py-3 px-2 text-xs font-black uppercase text-gray-800 text-center w-16">QTY</th>
+                                    <tr className="border-y-2 border-gray-800 bg-gray-50">
+                                        <th className="py-1.5 px-1.5 text-[10px] font-black uppercase text-gray-700 w-7 text-center">No</th>
+                                        <th className="py-1.5 px-1.5 text-[10px] font-black uppercase text-gray-700 w-[20%]">Kategori</th>
+                                        <th className="py-1.5 px-1.5 text-[10px] font-black uppercase text-gray-700">Nama Barang</th>
+                                        <th className="py-1.5 px-1.5 text-[10px] font-black uppercase text-gray-700 text-center w-10">Qty</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-dashed divide-gray-200">
+                                <tbody className="divide-y divide-gray-100">
                                     {rakitanItems.map((item, idx) => (
-                                        <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="py-2.5 px-2 text-xs font-bold text-gray-400 text-center">{idx + 1}</td>
-                                            <td className="py-2.5 px-2 text-xs font-bold text-gray-600 uppercase">{item.kategori}</td>
-                                            <td className="py-2.5 px-2 text-sm font-medium text-gray-900">{item.nama}</td>
-                                            <td className="py-2.5 px-2 text-sm font-bold text-gray-900 text-center">{item.qty}x</td>
+                                        <tr key={item.id} className={idx % 2 === 1 ? 'bg-gray-50/60' : ''}>
+                                            <td className="py-[5px] px-1.5 text-[10px] font-semibold text-gray-300 text-center">{idx + 1}</td>
+                                            <td className="py-[5px] px-1.5 text-[11px] font-bold text-gray-500 uppercase">{item.kategori}</td>
+                                            <td className="py-[5px] px-1.5 text-[11px] font-medium text-gray-900 leading-tight">{item.nama}</td>
+                                            <td className="py-[5px] px-1.5 text-[11px] font-bold text-gray-800 text-center">{item.qty}x</td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
 
                             {/* Harga Final Banner */}
-                            <div className="mt-8 space-y-3">
-                                {/* Dotted divider */}
-                                <div className="border-t-[3px] border-dashed border-gray-200 mb-4"></div>
+                            <div className="mt-4 space-y-2">
+                                <div className="border-t-2 border-dashed border-gray-200"></div>
 
-                                <div className="flex items-center justify-between bg-emerald-50 border-2 border-emerald-500 rounded-xl p-4 shadow-sm overflow-hidden relative">
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl transform translate-x-10 -translate-y-10"></div>
+                                <div className="flex items-center justify-between bg-emerald-50 border-2 border-emerald-500 rounded-lg px-3 py-2.5 overflow-hidden relative">
                                     <div>
-                                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 block mb-1">Total Offline</span>
-                                        <span className="text-xs font-medium text-emerald-800/80">Pembelian Langsung di Toko</span>
+                                        <span className="text-[9px] font-black uppercase tracking-wider text-emerald-600 block">Total Offline</span>
+                                        <span className="text-[10px] font-medium text-emerald-700/70">Pembelian Langsung di Toko</span>
                                     </div>
-                                    <div className="text-right z-10">
-                                        <span className="text-2xl font-black text-emerald-600 tracking-tight">Rp {result.hargaOffline.toLocaleString('id-ID')}</span>
-                                    </div>
+                                    <span className="text-xl font-black text-emerald-600 tracking-tight">Rp {result.hargaOffline.toLocaleString('id-ID')}</span>
                                 </div>
 
-                                <div className="flex items-center justify-between bg-orange-50 border-2 border-orange-500 rounded-xl p-4 shadow-sm overflow-hidden relative">
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/10 rounded-full blur-2xl transform translate-x-10 -translate-y-10"></div>
+                                <div className="flex items-center justify-between bg-orange-50 border-2 border-orange-500 rounded-lg px-3 py-2.5 overflow-hidden relative">
                                     <div>
-                                        <span className="text-[10px] font-black uppercase tracking-wider text-orange-600 block mb-1">Total Online Shop</span>
-                                        <span className="text-xs font-medium text-orange-800/80">Via E-Commerce ({storeConfigs.find(s=>s.id===selectedStoreId)?.name || 'Shopee/Toped'})</span>
+                                        <span className="text-[9px] font-black uppercase tracking-wider text-orange-600 block">Total Online Shop</span>
+                                        <span className="text-[10px] font-medium text-orange-700/70">Via E-Commerce ({storeConfigs.find(s=>s.id===selectedStoreId)?.name || 'Shopee/Toped'})</span>
                                     </div>
-                                    <div className="text-right z-10">
-                                        <span className="text-2xl font-black text-orange-600 tracking-tight">Rp {result.hargaJualOnline.toLocaleString('id-ID')}</span>
-                                    </div>
+                                    <span className="text-xl font-black text-orange-600 tracking-tight">Rp {result.hargaJualOnline.toLocaleString('id-ID')}</span>
                                 </div>
                             </div>
                         </div>
