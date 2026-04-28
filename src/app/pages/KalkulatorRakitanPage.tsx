@@ -349,15 +349,24 @@ export default function KalkulatorPage() {
                                 <div className="relative flex-1">
                                     {rule.type === 'flat' && <span className="absolute left-1.5 top-1 text-[9px] text-gray-400 font-bold">Rp</span>}
                                     <input 
-                                        type="number" 
+                                        type={rule.type === 'percent' ? "number" : "text"} 
                                         min="0"
-                                        step={rule.type === 'percent' ? "0.1" : "100"} 
-                                        value={rule.value} 
+                                        step={rule.type === 'percent' ? "0.1" : undefined} 
+                                        value={rule.type === 'percent' ? (rule.value === 0 ? '' : rule.value) : (rule.value === 0 ? '' : rule.value.toLocaleString('id-ID'))} 
                                         onChange={(e) => {
-                                            const val = Math.max(0, Number(e.target.value));
-                                            const n = [...activeFeeRules];
-                                            n[idx].value = val;
-                                            setActiveFeeRules(n);
+                                            if (rule.type === 'percent') {
+                                                const val = Math.max(0, Number(e.target.value));
+                                                const n = [...activeFeeRules];
+                                                n[idx].value = val;
+                                                setActiveFeeRules(n);
+                                            } else {
+                                                const rawValue = e.target.value.replace(/\./g, '');
+                                                const numValue = parseInt(rawValue, 10);
+                                                const val = isNaN(numValue) ? 0 : Math.max(0, numValue);
+                                                const n = [...activeFeeRules];
+                                                n[idx].value = val;
+                                                setActiveFeeRules(n);
+                                            }
                                         }} 
                                         className={`w-full text-[11px] py-1 border border-gray-200 rounded focus:ring-1 ring-blue-400 outline-none ${rule.type === 'flat' ? 'pl-5 pr-1' : 'pl-1 pr-4'}`} 
                                     />
@@ -368,11 +377,13 @@ export default function KalkulatorPage() {
                                     <div className="relative flex-1 bg-gray-50 rounded border border-gray-100 group/max">
                                         <span className="absolute left-1.5 top-1.5 text-[7px] font-black text-gray-400 uppercase tracking-tighter">MAX</span>
                                         <input 
-                                            type="number" 
+                                            type="text" 
                                             min="0"
-                                            value={rule.capRp} 
+                                            value={rule.capRp === 0 ? '' : rule.capRp.toLocaleString('id-ID')} 
                                             onChange={(e) => {
-                                                const val = Math.max(0, Number(e.target.value));
+                                                const rawValue = e.target.value.replace(/\./g, '');
+                                                const numValue = parseInt(rawValue, 10);
+                                                const val = isNaN(numValue) ? 0 : Math.max(0, numValue);
                                                 const n = [...activeFeeRules];
                                                 n[idx].capRp = val;
                                                 setActiveFeeRules(n);
@@ -415,12 +426,14 @@ export default function KalkulatorPage() {
                                     <div className="relative flex-1">
                                         <span className="absolute left-3 top-2.5 text-xs text-gray-500">Rp</span>
                                         <input 
-                                            type="number" 
+                                            type="text" 
                                             min="0"
-                                            value={mod} 
+                                            value={mod === 0 ? '' : mod.toLocaleString('id-ID')} 
                                             onChange={(e) => {
+                                                const rawValue = e.target.value.replace(/\./g, '');
+                                                const numValue = parseInt(rawValue, 10);
                                                 const newMods = [...modalSatuan];
-                                                newMods[idx] = Math.max(0, Number(e.target.value));
+                                                newMods[idx] = isNaN(numValue) ? 0 : Math.max(0, numValue);
                                                 setModalSatuan(newMods);
                                             }}
                                             className="w-full text-sm pl-8 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-[#3B82F6]" 
@@ -436,12 +449,24 @@ export default function KalkulatorPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-semibold text-gray-700 mb-1">Kemasan/Packing (Rp)</label>
-                                <input type="number" min="0" value={packingSatuan} onChange={(e) => setPackingSatuan(Math.max(0, Number(e.target.value)))} className="w-full text-sm px-3 py-2 border bg-gray-50 rounded-lg focus:ring-2 focus:ring-[#3B82F6]" />
+                                <input type="text" min="0" value={packingSatuan === 0 ? '' : packingSatuan.toLocaleString('id-ID')} onChange={(e) => {
+                                    const rawValue = e.target.value.replace(/\./g, '');
+                                    const numValue = parseInt(rawValue, 10);
+                                    setPackingSatuan(isNaN(numValue) ? 0 : Math.max(0, numValue));
+                                }} className="w-full text-sm px-3 py-2 border bg-gray-50 rounded-lg focus:ring-2 focus:ring-[#3B82F6]" />
                             </div>
                             <div>
                                 <label className="block text-xs font-semibold text-emerald-700 mb-1">Target Margin Bersih</label>
                                 <div className="flex gap-1">
-                                    <input type="number" min="0" value={marginSatuan} onChange={(e) => setMarginSatuan(Math.max(0, Number(e.target.value)))} className="flex-1 text-sm px-3 py-2 border border-emerald-300 bg-emerald-50 focus:bg-white rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold" />
+                                    <input type={marginSatuanType === 'percent' ? "number" : "text"} min="0" value={marginSatuanType === 'percent' ? (marginSatuan === 0 ? '' : marginSatuan) : (marginSatuan === 0 ? '' : marginSatuan.toLocaleString('id-ID'))} onChange={(e) => {
+                                        if (marginSatuanType === 'percent') {
+                                            setMarginSatuan(Math.max(0, Number(e.target.value)));
+                                        } else {
+                                            const rawValue = e.target.value.replace(/\./g, '');
+                                            const numValue = parseInt(rawValue, 10);
+                                            setMarginSatuan(isNaN(numValue) ? 0 : Math.max(0, numValue));
+                                        }
+                                    }} className="flex-1 text-sm px-3 py-2 border border-emerald-300 bg-emerald-50 focus:bg-white rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold" />
                                     <button
                                         onClick={() => setMarginSatuanType(marginSatuanType === 'flat' ? 'percent' : 'flat')}
                                         className={`px-3 py-2 rounded-lg text-xs font-black border transition-all shrink-0 ${marginSatuanType === 'percent' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'}`}
@@ -589,7 +614,11 @@ export default function KalkulatorPage() {
                                             </div>
 
                                             <div className="flex-1">
-                                                <input type="number" min="0" value={item.modal} onChange={(e) => { const n = [...rakitanItems]; n[idx].modal = Math.max(0, Number(e.target.value)); setRakitanItems(n); }} className="w-full text-xs px-2 py-1 border border-gray-200 rounded-md bg-white outline-none focus:ring-1 ring-blue-400 text-right font-medium" />
+                                                <input type="text" min="0" value={item.modal === 0 ? '' : item.modal.toLocaleString('id-ID')} onChange={(e) => { 
+                                                    const rawValue = e.target.value.replace(/\./g, '');
+                                                    const numValue = parseInt(rawValue, 10);
+                                                    const n = [...rakitanItems]; n[idx].modal = isNaN(numValue) ? 0 : Math.max(0, numValue); setRakitanItems(n); 
+                                                }} className="w-full text-xs px-2 py-1 border border-gray-200 rounded-md bg-white outline-none focus:ring-1 ring-blue-400 text-right font-medium" />
                                             </div>
 
                                             <button onClick={() => setRakitanItems(rakitanItems.filter(r => r.id !== item.id))} className="absolute -right-1 -top-1 md:opacity-0 group-hover:opacity-100 transition p-1 bg-red-500 text-white rounded-full shadow-sm hover:bg-red-600 z-10"><Trash2 size={12}/></button>
@@ -601,12 +630,24 @@ export default function KalkulatorPage() {
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-700 mb-1">Packing Kayu (Rp)</label>
-                                    <input type="number" min="0" value={packingRakitan} onChange={(e) => setPackingRakitan(Math.max(0, Number(e.target.value)))} className="w-full text-sm px-3 py-2 border border-gray-300 bg-gray-50 rounded-lg focus:ring-2 focus:ring-[#3B82F6]" />
+                                    <input type="text" min="0" value={packingRakitan === 0 ? '' : packingRakitan.toLocaleString('id-ID')} onChange={(e) => {
+                                        const rawValue = e.target.value.replace(/\./g, '');
+                                        const numValue = parseInt(rawValue, 10);
+                                        setPackingRakitan(isNaN(numValue) ? 0 : Math.max(0, numValue));
+                                    }} className="w-full text-sm px-3 py-2 border border-gray-300 bg-gray-50 rounded-lg focus:ring-2 focus:ring-[#3B82F6]" />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-semibold text-emerald-700 mb-1">Target Margin Bersih</label>
                                     <div className="flex gap-1">
-                                        <input type="number" min="0" value={marginRakitan} onChange={(e) => setMarginRakitan(Math.max(0, Number(e.target.value)))} className="flex-1 text-sm px-3 py-2 border border-emerald-300 bg-emerald-50 focus:bg-white rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold" />
+                                        <input type={marginRakitanType === 'percent' ? "number" : "text"} min="0" value={marginRakitanType === 'percent' ? (marginRakitan === 0 ? '' : marginRakitan) : (marginRakitan === 0 ? '' : marginRakitan.toLocaleString('id-ID'))} onChange={(e) => {
+                                            if (marginRakitanType === 'percent') {
+                                                setMarginRakitan(Math.max(0, Number(e.target.value)));
+                                            } else {
+                                                const rawValue = e.target.value.replace(/\./g, '');
+                                                const numValue = parseInt(rawValue, 10);
+                                                setMarginRakitan(isNaN(numValue) ? 0 : Math.max(0, numValue));
+                                            }
+                                        }} className="flex-1 text-sm px-3 py-2 border border-emerald-300 bg-emerald-50 focus:bg-white rounded-lg focus:ring-2 focus:ring-emerald-500 font-bold" />
                                         <button
                                             onClick={() => setMarginRakitanType(marginRakitanType === 'flat' ? 'percent' : 'flat')}
                                             className={`px-3 py-2 rounded-lg text-xs font-black border transition-all shrink-0 ${marginRakitanType === 'percent' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100'}`}
