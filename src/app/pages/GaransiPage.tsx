@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '../api';
 
@@ -8,6 +8,7 @@ interface Warranty {
   customer_name: string;
   customer_phone: string;
   product_name: string;
+  tanggal_pembelian?: string | null;
   tanggal_masuk: string;
   status: 'diterima_toko' | 'proses_distributor' | 'dikirim_ke_customer';
   nomor_resi?: string | null;
@@ -17,6 +18,11 @@ interface Warranty {
 }
 
 interface Distributor {
+  id: number;
+  name: string;
+}
+
+interface Product {
   id: number;
   name: string;
 }
@@ -36,6 +42,7 @@ const statusLabels: Record<Warranty['status'], string> = {
 export default function GaransiPage() {
   const [warranties, setWarranties] = useState<Warranty[]>([]);
   const [distributors, setDistributors] = useState<Distributor[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [filter, setFilter] = useState<Warranty['status'] | 'all'>('all');
   const [loading, setLoading] = useState(true);
 
@@ -45,10 +52,16 @@ export default function GaransiPage() {
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Product search states
+  const [productSearch, setProductSearch] = useState('');
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+  const productDropdownRef = useRef<HTMLDivElement>(null);
+
   const [formData, setFormData] = useState({
     customer_name: '',
     customer_phone: '',
     product_name: '',
+    tanggal_pembelian: '',
     tanggal_masuk: new Date().toISOString().split('T')[0],
     status: 'diterima_toko' as Warranty['status'],
     nomor_resi: '',
@@ -60,6 +73,18 @@ export default function GaransiPage() {
   useEffect(() => {
     fetchWarranties();
     fetchDistributors();
+    fetchProducts();
+  }, []);
+
+  // Close product dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (productDropdownRef.current && !productDropdownRef.current.contains(event.target as Node)) {
+        setShowProductDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const fetchWarranties = async () => {
@@ -83,6 +108,15 @@ export default function GaransiPage() {
     }
   };
 
+  const fetchProducts = async () => {
+    try {
+      const res = await api.get('/products');
+      setProducts(res.data);
+    } catch (err) {
+      console.error('Gagal memuat produk:', err);
+    }
+  };
+
   const handleOpenModal = (mode: 'add' | 'edit', warranty?: Warranty) => {
     setModalMode(mode);
     if (warranty) {
@@ -91,6 +125,7 @@ export default function GaransiPage() {
         customer_name: warranty.customer_name,
         customer_phone: warranty.customer_phone,
         product_name: warranty.product_name,
+        tanggal_pembelian: warranty.tanggal_pembelian ? warranty.tanggal_pembelian.substring(0, 10) : '',
         tanggal_masuk: warranty.tanggal_masuk.substring(0, 10),
         status: warranty.status,
         nomor_resi: warranty.nomor_resi || '',
@@ -98,12 +133,14 @@ export default function GaransiPage() {
         distributor_name: warranty.distributor_name || '',
         tanggal_kirim_distributor: warranty.tanggal_kirim_distributor || '',
       });
+      setProductSearch(warranty.product_name);
     } else {
       setCurrentId(null);
       setFormData({
         customer_name: '',
         customer_phone: '',
         product_name: '',
+        tanggal_pembelian: '',
         tanggal_masuk: new Date().toISOString().split('T')[0],
         status: 'diterima_toko',
         nomor_resi: '',
@@ -111,7 +148,9 @@ export default function GaransiPage() {
         distributor_name: '',
         tanggal_kirim_distributor: '',
       });
+      setProductSearch('');
     }
+    setShowProductDropdown(false);
     setIsModalOpen(true);
   };
 
@@ -121,16 +160,34 @@ export default function GaransiPage() {
     e.preventDefault();
     try {
       setIsSubmitting(true);
+      
+      // Build the payload, only include non-empty optional fields
+      const payload: Record<string, string> = {
+        customer_name: formData.customer_name,
+        customer_phone: formData.customer_phone,
+        product_name: formData.product_name,
+        tanggal_masuk: formData.tanggal_masuk,
+        status: formData.status,
+      };
+
+      if (formData.tanggal_pembelian) payload.tanggal_pembelian = formData.tanggal_pembelian;
+      if (formData.catatan) payload.catatan = formData.catatan;
+      if (formData.nomor_resi) payload.nomor_resi = formData.nomor_resi;
+      if (formData.distributor_name) payload.distributor_name = formData.distributor_name;
+      if (formData.tanggal_kirim_distributor) payload.tanggal_kirim_distributor = formData.tanggal_kirim_distributor;
+
       if (modalMode === 'add') {
-        await api.post('/warranties', formData);
+        await api.post('/warranties', payload);
       } else {
-        await api.put(`/warranties/${currentId}`, formData);
+        await api.put(`/warranties/${currentId}`, payload);
       }
       toast.success(modalMode === 'add' ? 'Garansi berhasil ditambah' : 'Garansi berhasil diupdate');
       handleCloseModal();
       fetchWarranties();
-    } catch (err) {
-      toast.error('Gagal menyimpan garansi');
+    } catch (err: any) {
+      console.error('Warranty save error:', err?.response?.data || err);
+      const message = err?.response?.data?.message || 'Gagal menyimpan garansi';
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -146,6 +203,17 @@ export default function GaransiPage() {
         toast.error('Gagal menghapus garansi');
       }
     }
+  };
+
+  // Product search filter
+  const filteredProducts = products.filter(p =>
+    p.name.toLowerCase().includes(productSearch.toLowerCase())
+  );
+
+  const handleProductSelect = (productName: string) => {
+    setFormData({ ...formData, product_name: productName });
+    setProductSearch(productName);
+    setShowProductDropdown(false);
   };
 
   const filteredWarranties = warranties.filter(
@@ -233,6 +301,7 @@ export default function GaransiPage() {
               <tr>
                 <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Customer</th>
                 <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Produk</th>
+                <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Tgl Beli</th>
                 <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Distributor</th>
                 <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Tgl Masuk</th>
                 <th className="text-left px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-gray-500">Tgl Kirim Dist.</th>
@@ -249,6 +318,12 @@ export default function GaransiPage() {
                     <p className="text-[10px] text-gray-500">{warranty.customer_phone}</p>
                   </td>
                   <td className="px-3 py-2 text-xs font-medium text-gray-700">{warranty.product_name}</td>
+                  <td className="px-3 py-2 text-xs text-gray-600">
+                    {warranty.tanggal_pembelian
+                      ? new Date(warranty.tanggal_pembelian).toLocaleDateString('id-ID')
+                      : <span className="text-gray-400">-</span>
+                    }
+                  </td>
                   <td className="px-3 py-2 text-xs">
                     {warranty.distributor_name ? (
                       <span className="font-medium text-gray-700">{warranty.distributor_name}</span>
@@ -294,7 +369,7 @@ export default function GaransiPage() {
               ))}
               {filteredWarranties.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500 text-xs">Belum ada garansi!</td>
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500 text-xs">Belum ada garansi!</td>
                 </tr>
               )}
             </tbody>
@@ -317,7 +392,6 @@ export default function GaransiPage() {
                   <label className="block text-[11px] font-bold text-gray-600 mb-1.5 uppercase tracking-wider">Nama Customer</label>
                   <input
                     type="text"
-                    required
                     value={formData.customer_name}
                     onChange={(e) => setFormData({ ...formData, customer_name: e.target.value })}
                     className="w-full px-3 py-1.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs bg-gray-50"
@@ -327,7 +401,6 @@ export default function GaransiPage() {
                   <label className="block text-[11px] font-bold text-gray-600 mb-1.5 uppercase tracking-wider">No. HP/WA</label>
                   <input
                     type="text"
-                    required
                     value={formData.customer_phone}
                     onChange={(e) => setFormData({ ...formData, customer_phone: e.target.value })}
                     className="w-full px-3 py-1.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs bg-gray-50"
@@ -335,13 +408,48 @@ export default function GaransiPage() {
                 </div>
               </div>
 
-              <div>
+              {/* Product Name - searchable from database */}
+              <div ref={productDropdownRef} className="relative">
                 <label className="block text-[11px] font-bold text-gray-600 mb-1.5 uppercase tracking-wider">Nama Produk (Seri/Model)</label>
+                <div className="relative">
+                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    required
+                    value={productSearch}
+                    onChange={(e) => {
+                      setProductSearch(e.target.value);
+                      setFormData({ ...formData, product_name: e.target.value });
+                      setShowProductDropdown(true);
+                    }}
+                    onFocus={() => setShowProductDropdown(true)}
+                    placeholder="Ketik untuk cari produk..."
+                    className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs bg-gray-50"
+                  />
+                </div>
+                {showProductDropdown && productSearch && filteredProducts.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                    {filteredProducts.slice(0, 20).map((product) => (
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => handleProductSelect(product.name)}
+                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-0"
+                      >
+                        {product.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Tanggal Pembelian */}
+              <div>
+                <label className="block text-[11px] font-bold text-gray-600 mb-1.5 uppercase tracking-wider">Tanggal Pembelian</label>
                 <input
-                  type="text"
-                  required
-                  value={formData.product_name}
-                  onChange={(e) => setFormData({ ...formData, product_name: e.target.value })}
+                  type="date"
+                  value={formData.tanggal_pembelian}
+                  onChange={(e) => setFormData({ ...formData, tanggal_pembelian: e.target.value })}
                   className="w-full px-3 py-1.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs bg-gray-50"
                 />
               </div>

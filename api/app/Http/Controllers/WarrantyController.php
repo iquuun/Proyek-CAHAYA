@@ -16,9 +16,10 @@ class WarrantyController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'customer_name' => 'required|string',
-            'customer_phone' => 'required|string',
+            'customer_name' => 'nullable|string',
+            'customer_phone' => 'nullable|string',
             'product_name' => 'required|string',
+            'tanggal_pembelian' => 'nullable|date',
             'tanggal_masuk' => 'required|date',
             'status' => 'required|in:diterima_toko,proses_distributor,dikirim_ke_customer',
             'catatan' => 'nullable|string',
@@ -27,10 +28,14 @@ class WarrantyController extends Controller
             'tanggal_kirim_distributor' => 'nullable|date',
         ]);
 
-        $warranty = Warranty::create([
-            ...$request->all(),
-            'created_by' => $request->user()->id,
+        $data = $request->only([
+            'customer_name', 'customer_phone', 'product_name', 'tanggal_pembelian',
+            'tanggal_masuk', 'status', 'catatan', 'nomor_resi',
+            'distributor_name', 'tanggal_kirim_distributor',
         ]);
+        $data['created_by'] = $request->user()->id;
+
+        $warranty = Warranty::create($data);
 
         return response()->json($warranty, 201);
     }
@@ -38,9 +43,10 @@ class WarrantyController extends Controller
     public function update(Request $request, Warranty $warranty)
     {
         $request->validate([
-            'customer_name' => 'required|string',
-            'customer_phone' => 'required|string',
+            'customer_name' => 'nullable|string',
+            'customer_phone' => 'nullable|string',
             'product_name' => 'required|string',
+            'tanggal_pembelian' => 'nullable|date',
             'tanggal_masuk' => 'required|date',
             'status' => 'required|in:diterima_toko,proses_distributor,dikirim_ke_customer',
             'catatan' => 'nullable|string',
@@ -49,7 +55,13 @@ class WarrantyController extends Controller
             'tanggal_kirim_distributor' => 'nullable|date',
         ]);
 
-        $warranty->update($request->all());
+        $data = $request->only([
+            'customer_name', 'customer_phone', 'product_name', 'tanggal_pembelian',
+            'tanggal_masuk', 'status', 'catatan', 'nomor_resi',
+            'distributor_name', 'tanggal_kirim_distributor',
+        ]);
+
+        $warranty->update($data);
 
         return response()->json($warranty);
     }
