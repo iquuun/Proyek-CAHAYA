@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Upload, Tags, Package, Banknote, Box, Percent, X, Check } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Upload, Tags, Package, Banknote, Box, Percent, X, Check, ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { useThemeContext } from '../context/ThemeContext';
 import Select from 'react-select';
@@ -47,6 +47,7 @@ export default function ProdukTab() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [sortBy, setSortBy] = useState<'az' | 'za' | 'price_low' | 'price_high' | 'stock_high' | 'stock_low'>('az');
 
   // Custom Delete Confirm
   const [confirmDelete, setConfirmDelete] = useState<{isOpen: boolean, id: number | null, name: string}>({isOpen: false, id: null, name: ''});
@@ -61,7 +62,7 @@ export default function ProdukTab() {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedCategory]);
+  }, [searchTerm, selectedCategory, sortBy]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -288,8 +289,18 @@ export default function ProdukTab() {
       const matchSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchCategory = selectedCategory === 'all' || product.category?.name === selectedCategory;
       return matchSearch && matchCategory;
-    }).sort((a, b) => a.name.localeCompare(b.name));
-  }, [products, searchTerm, selectedCategory]);
+    }).sort((a, b) => {
+      switch (sortBy) {
+        case 'az': return a.name.localeCompare(b.name);
+        case 'za': return b.name.localeCompare(a.name);
+        case 'price_low': return a.harga_jual - b.harga_jual;
+        case 'price_high': return b.harga_jual - a.harga_jual;
+        case 'stock_high': return b.stok_saat_ini - a.stok_saat_ini;
+        case 'stock_low': return a.stok_saat_ini - b.stok_saat_ini;
+        default: return a.name.localeCompare(b.name);
+      }
+    });
+  }, [products, searchTerm, selectedCategory, sortBy]);
 
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
   const currentItems = useMemo(() => {
@@ -356,7 +367,7 @@ export default function ProdukTab() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 space-y-2">
         <div className="flex flex-col md:flex-row gap-2">
           <div className="flex-1 relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
@@ -368,17 +379,34 @@ export default function ProdukTab() {
               className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs bg-gray-50"
             />
           </div>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-2.5 py-1.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs bg-gray-50 font-medium"
-          >
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat === 'all' ? 'Semua Kategori' : cat}
-              </option>
-            ))}
-          </select>
+          <div className="flex gap-2">
+            <div className="relative">
+              <ArrowUpDown className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={13} />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="pl-8 pr-2.5 py-1.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs bg-gray-50 font-medium cursor-pointer"
+              >
+                <option value="az">Nama A–Z</option>
+                <option value="za">Nama Z–A</option>
+                <option value="price_low">Harga Termurah</option>
+                <option value="price_high">Harga Termahal</option>
+                <option value="stock_high">Stok Terbanyak</option>
+                <option value="stock_low">Stok Tersedikit</option>
+              </select>
+            </div>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="px-2.5 py-1.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#3B82F6] outline-none text-xs bg-gray-50 font-medium"
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat === 'all' ? 'Semua Kategori' : cat}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
