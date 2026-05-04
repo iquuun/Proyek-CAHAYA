@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Save, FileText, CheckCircle2, Copy, Search, PlusCircle, Plus, Minus, Package, X, Loader2, Box } from 'lucide-react';
+import { FileText, Copy, Search, PlusCircle, Plus, Minus, Package, X, Loader2, Box } from 'lucide-react';
 import api from '../api';
 import { toast } from 'sonner';
 
@@ -26,8 +26,7 @@ interface ParsedLine {
 export default function CatatanBelanjaTab() {
   const [note, setNote] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
   
   // Product picker states
   const [products, setProducts] = useState<Product[]>([]);
@@ -83,18 +82,7 @@ export default function CatatanBelanjaTab() {
     }
   };
 
-  const handleSave = () => {
-    setIsSaving(true);
-    try {
-      localStorage.setItem('catatan_belanja', note);
-      setLastSaved(new Date());
-      toast.success('Catatan berhasil disimpan.');
-    } catch (err) {
-      toast.error('Gagal menyimpan catatan');
-    } finally {
-      setIsSaving(false);
-    }
-  };
+
 
   // Auto save ke localStorage tiap 3 detik setelah berhenti ngetik
   useEffect(() => {
@@ -102,7 +90,6 @@ export default function CatatanBelanjaTab() {
     
     const timeoutId = setTimeout(() => {
       localStorage.setItem('catatan_belanja', note);
-      setLastSaved(new Date());
     }, 3000);
     
     return () => clearTimeout(timeoutId);
@@ -278,8 +265,7 @@ export default function CatatanBelanjaTab() {
           </p>
         </div>
         
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex gap-2">
+        <div className="flex gap-2">
             <button 
               onClick={handleSortAZ}
               className="bg-accent text-foreground hover:bg-muted px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 border border-border transition active:scale-95"
@@ -292,23 +278,6 @@ export default function CatatanBelanjaTab() {
             >
               <Copy size={14} /> Salin Teks
             </button>
-            <button 
-              onClick={handleSave}
-              disabled={isSaving}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 shadow-sm transition active:scale-95 disabled:opacity-50"
-            >
-              {isSaving ? 'Menyimpan...' : (
-                <>
-                  <Save size={14} /> Simpan
-                </>
-              )}
-            </button>
-          </div>
-          {lastSaved && (
-            <span className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-               <CheckCircle2 size={10} className="text-green-500" /> Tersimpan jam {lastSaved.toLocaleTimeString('id-ID')}
-            </span>
-          )}
         </div>
       </div>
 
