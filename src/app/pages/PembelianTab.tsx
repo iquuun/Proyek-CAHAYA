@@ -248,11 +248,13 @@ export default function PembelianTab() {
         terbayar: terbayar,
         status_pembayaran: (terbayar >= total) ? 'lunas' : 'hutang',
         jatuh_tempo: (terbayar < total && formData.jatuh_tempo) ? formData.jatuh_tempo : undefined,
-        items: formData.items.map(i => ({
-          product_id: parseInt(i.product_id),
-          qty: parseInt(i.qty),
-          harga_beli: parseFloat(i.harga_beli),
-        }))
+        items: formData.items
+          .filter(i => i.product_id) // Filter out empty rows
+          .map(i => ({
+            product_id: parseInt(i.product_id),
+            qty: parseInt(i.qty),
+            harga_beli: parseFloat(i.harga_beli),
+          }))
       };
 
       if (isEditMode && editId) {
@@ -395,7 +397,9 @@ export default function PembelianTab() {
   };
 
   const calculateTotal = (items: typeof formData.items) => {
-    const total = items.reduce((sum, item) => sum + (parseFloat(item.harga_beli || '0') * parseInt(item.qty || '0')), 0);
+    const total = items
+      .filter(item => item.product_id) // Only count filled rows
+      .reduce((sum, item) => sum + (parseFloat(item.harga_beli || '0') * parseInt(item.qty || '0')), 0);
     setFormData(prev => ({ ...prev, total_pembelian: total.toString() }));
   };
 
@@ -421,6 +425,11 @@ export default function PembelianTab() {
       const selectedProduct = products.find(p => p.id.toString() === value);
       if (selectedProduct) {
         newItems[index].harga_beli = selectedProduct.harga_beli.toString();
+      }
+
+      // Auto-add new empty row when filling the last item
+      if (value && index === newItems.length - 1) {
+        newItems.push({ product_id: '', qty: '1', harga_beli: '0' });
       }
     }
 

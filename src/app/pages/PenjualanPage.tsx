@@ -1131,9 +1131,21 @@ export default function PenjualanPage() {
                 {/* Numpad & Payment */}
                 <div className="bg-white rounded-xl shadow-lg border-t-[3px] border-green-500 p-3 mt-auto shrink-0">
                   <div className="mb-2 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-500 font-bold uppercase text-[10px] tracking-wider">Tunai Dibayar</span>
-                      <span className="font-black text-xl text-green-600">Rp {parseFloat(payment).toLocaleString('id-ID')}</span>
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <span className="text-gray-500 font-bold uppercase text-[10px] tracking-wider whitespace-nowrap">Tunai Dibayar</span>
+                      <div className="flex items-center gap-2 flex-1 justify-end">
+                        <span className="text-sm font-black text-green-600">Rp</span>
+                        <input
+                          type="text"
+                          value={payment === '0' ? '' : formatNumber(payment)}
+                          onChange={(e) => {
+                            const val = parseNumber(e.target.value);
+                            setPayment(val.toString());
+                          }}
+                          placeholder="0"
+                          className="w-40 px-2.5 py-1.5 border border-green-200 rounded-lg text-xl font-black text-green-600 outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 bg-green-50/50 text-right transition-all"
+                        />
+                      </div>
                     </div>
 
                     {parseFloat(payment) >= customTotal && customTotal > 0 && (
