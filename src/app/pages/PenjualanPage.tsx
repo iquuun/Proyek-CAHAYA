@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Search, Plus, Trash2, Printer, History, ShoppingCart, Ban, ChevronLeft, ChevronRight, Calendar, Download, GripVertical, Edit2, Save, Settings } from 'lucide-react';
+import { Search, Plus, Trash2, Printer, History, ShoppingCart, Ban, ChevronLeft, ChevronRight, Calendar, Download, GripVertical, Edit2, Save, Settings, RotateCcw } from 'lucide-react';
 import StoreProfileModal from '../components/StoreProfileModal';
 import * as XLSX from 'xlsx';
 import api from '../api';
@@ -384,6 +384,41 @@ export default function PenjualanPage() {
     setSaleItems([...saleItems, ...itemsToAdd]);
     setIsTemplateModalOpen(false);
     toast.success('Template berhasil ditambahkan ke keranjang.');
+  };
+
+  const handleBeliLagi = (sale: Sale) => {
+    const itemsToAdd: SaleItem[] = sale.items.map(item => {
+      // Try to find the product in current product list
+      const existingProduct = item.product?.id ? products.find(p => p.id === item.product.id) : null;
+
+      const product: Product = existingProduct || {
+        id: item.product?.id || -Date.now() - Math.random(),
+        kode: item.product?.kode || '',
+        name: item.manual_name || item.product?.name || 'Produk tidak ditemukan',
+        harga_jual: item.harga_jual_saat_itu,
+        stok_saat_ini: existingProduct ? existingProduct.stok_saat_ini : 999,
+        category_id: item.product?.category_id || 0,
+        category: item.product?.category,
+      };
+
+      return {
+        product,
+        qty: item.qty,
+        harga_jual_saat_itu: item.harga_jual_saat_itu,
+        is_sub: !!item.is_sub,
+        satuan: item.satuan || 'PCS',
+      };
+    });
+
+    setSaleItems(itemsToAdd);
+    setChannel(sale.channel || 'Offline');
+    setCustomerName(sale.username_pembeli || '');
+    setCustomerAddress(sale.alamat_pembeli || '');
+    setCustomerPhone(sale.telepon_pembeli || '');
+    setTaxPercent(sale.tax_percent || 0);
+    setPayment('0');
+    setActiveTab('pos');
+    toast.success(`Barang dari ${sale.invoice} berhasil dimuat ke kasir!`);
   };
 
   const deleteTemplate = async (id: number) => {
@@ -1286,6 +1321,9 @@ export default function PenjualanPage() {
                                   </button>
                                   <button onClick={() => openEditModal(sale)} className="p-1.5 text-gray-400 hover:text-amber-500 hover:bg-amber-50 rounded-md transition-colors" title="Edit Harga / Info Faktur">
                                     <Edit2 size={15} />
+                                  </button>
+                                  <button onClick={() => handleBeliLagi(sale)} className="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors" title="Beli Lagi - Muat ke Kasir">
+                                    <RotateCcw size={15} />
                                   </button>
                                   <button onClick={() => setVoidTarget(sale)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Void / Batalkan Transaksi">
                                     <Ban size={15} />
